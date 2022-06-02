@@ -16,6 +16,7 @@ package nats
 
 import (
 	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/conduitio-labs/conduit-connector-nats/source"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -77,6 +78,31 @@ func Specification() sdk.Specification {
 				Default:     "",
 				Required:    false,
 				Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",
+			},
+			source.ConfigKeyBufferSize: {
+				Default:     "512",
+				Required:    false,
+				Description: "A buffer size for consumed messages.",
+			},
+			source.ConfigKeyStreamName: {
+				Default:     "",
+				Required:    false,
+				Description: "A stream name. Required if the connector in JetStream mode.",
+			},
+			source.ConfigKeyDurable: {
+				Default:     "conduit_push_consumer",
+				Required:    false,
+				Description: "A consumer name.",
+			},
+			source.ConfigKeyDeliveryPolicy: {
+				Default:     "all",
+				Required:    false,
+				Description: "A delivery policy.",
+			},
+			source.ConfigKeyAckPolicy: {
+				Default:     "all",
+				Required:    false,
+				Description: "An acknowledge policy.",
 			},
 		},
 	}
