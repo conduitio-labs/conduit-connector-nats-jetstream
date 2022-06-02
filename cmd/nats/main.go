@@ -16,13 +16,14 @@ package main
 
 import (
 	nats "github.com/conduitio-labs/conduit-connector-nats"
+	"github.com/conduitio-labs/conduit-connector-nats/source"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
 func main() {
 	sdk.Serve(sdk.Connector{
 		NewSpecification: nats.Specification,
-		NewSource:        nil,
+		NewSource:        source.NewSource,
 		NewDestination:   nil,
 	})
 }
