@@ -15,13 +15,175 @@
 package iterator
 
 import (
+	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 )
+
+func TestPubSubIterator_HasNext(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		messages chan *nats.Msg
+	}
+
+	tests := []struct {
+		name     string
+		fields   fields
+		fillFunc func(chan *nats.Msg)
+		want     bool
+	}{
+		{
+			name: "true, one message",
+			fields: fields{
+				messages: make(chan *nats.Msg, 1),
+			},
+			fillFunc: func(c chan *nats.Msg) {
+				c <- &nats.Msg{
+					Subject: "foo",
+					Data:    []byte(`"name": "bob"`),
+				}
+			},
+			want: true,
+		},
+		{
+			name: "false, no messages",
+			fields: fields{
+				messages: make(chan *nats.Msg),
+			},
+			fillFunc: nil,
+			want:     false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			i := &PubSubIterator{
+				messages: tt.fields.messages,
+			}
+
+			if tt.fillFunc != nil {
+				tt.fillFunc(tt.fields.messages)
+			}
+
+			if got := i.HasNext(context.Background()); got != tt.want {
+				t.Errorf("PubSubIterator.HasNext() = %v, want %v", got, tt.want)
+
+				return
+			}
+		})
+	}
+}
+
+func TestPubSubIterator_Next(t *testing.T) {
+	t.Parallel()
+
+	type fields struct {
+		messages chan *nats.Msg
+	}
+
+	type args struct {
+		ctx context.Context
+	}
+
+	tests := []struct {
+		name     string
+		fields   fields
+		deadline time.Duration
+		fillFunc func(chan *nats.Msg)
+		want     sdk.Record
+		wantErr  bool
+	}{
+		{
+			name: "success, one message",
+			fields: fields{
+				messages: make(chan *nats.Msg, 1),
+			},
+			fillFunc: func(c chan *nats.Msg) {
+				c <- &nats.Msg{
+					Subject: "foo",
+					Data:    []byte(`"name": "bob"`),
+				}
+			},
+			want: sdk.Record{
+				Payload: sdk.RawData([]byte(`"name": "bob"`)),
+			},
+			wantErr: false,
+		},
+		{
+			name: "success, no messages, skip",
+			fields: fields{
+				messages: make(chan *nats.Msg, 1),
+			},
+			fillFunc: nil,
+			want:     sdk.Record{},
+			wantErr:  false,
+		},
+		{
+			name: "success, no messages, context deadline",
+			fields: fields{
+				messages: make(chan *nats.Msg, 1),
+			},
+			deadline: 20 * time.Millisecond,
+			fillFunc: nil,
+			want:     sdk.Record{},
+			wantErr:  false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			i := &PubSubIterator{
+				messages: tt.fields.messages,
+			}
+
+			if tt.fillFunc != nil {
+				tt.fillFunc(tt.fields.messages)
+			}
+
+			if !i.HasNext(context.Background()) {
+				return
+			}
+
+			for i.HasNext(context.Background()) {
+				var ctx context.Context
+				var cancel context.CancelFunc
+
+				if tt.deadline != 0 {
+					ctx, cancel = context.WithTimeout(context.Background(), tt.deadline)
+				} else {
+					ctx = context.Background()
+				}
+
+				got, err := i.Next(ctx)
+
+				if cancel != nil {
+					cancel()
+				}
+
+				if (err != nil) != tt.wantErr {
+					t.Errorf("PubSubIterator.Next() error = %v, wantErr %v", err, tt.wantErr)
+					return
+				}
+
+				// we don't care about these fields
+				tt.want.CreatedAt = got.CreatedAt
+				tt.want.Position = got.Position
+
+				if !reflect.DeepEqual(got, tt.want) {
+					t.Errorf("PubSubIterator.Next() = %v, want %v", got, tt.want)
+				}
+			}
+		})
+	}
+}
 
 func TestPubSubIterator_messageToRecord(t *testing.T) {
 	t.Parallel()
