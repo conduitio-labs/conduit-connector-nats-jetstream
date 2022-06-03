@@ -96,7 +96,7 @@ func TestPubSubIterator_Next(t *testing.T) {
 	tests := []struct {
 		name     string
 		fields   fields
-		deadline time.Duration
+		timeout  time.Duration
 		fillFunc func(chan *nats.Msg)
 		want     sdk.Record
 		wantErr  bool
@@ -131,7 +131,7 @@ func TestPubSubIterator_Next(t *testing.T) {
 			fields: fields{
 				messages: make(chan *nats.Msg, 1),
 			},
-			deadline: 20 * time.Millisecond,
+			timeout:  20 * time.Millisecond,
 			fillFunc: nil,
 			want:     sdk.Record{},
 			wantErr:  false,
@@ -156,8 +156,8 @@ func TestPubSubIterator_Next(t *testing.T) {
 				var ctx context.Context
 				var cancel context.CancelFunc
 
-				if tt.deadline != 0 {
-					ctx, cancel = context.WithTimeout(context.Background(), tt.deadline)
+				if tt.timeout != 0 {
+					ctx, cancel = context.WithTimeout(context.Background(), tt.timeout)
 				} else {
 					ctx = context.Background()
 				}
