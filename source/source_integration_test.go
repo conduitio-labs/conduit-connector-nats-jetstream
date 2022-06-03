@@ -175,6 +175,12 @@ func TestSource_Read_PubSub(t *testing.T) {
 		t.Parallel()
 
 		_, err := source.Read(context.Background())
+		if err == nil {
+			t.Fatal("Source.Read expected backoff retry error, got nil")
+
+			return
+		}
+
 		if err != nil && !errors.Is(err, sdk.ErrBackoffRetry) {
 			t.Fatalf("read message: %v", err)
 
