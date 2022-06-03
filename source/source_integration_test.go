@@ -89,6 +89,11 @@ func TestSource_Read_PubSub(t *testing.T) {
 		t.Parallel()
 
 		testConn, err := test.GetTestConnection()
+		if err != nil {
+			t.Fatalf("get test connection: %v", err)
+
+			return
+		}
 
 		err = testConn.Publish("foo", []byte(`{"level": "info"}`))
 		if err != nil {
@@ -126,6 +131,11 @@ func TestSource_Read_PubSub(t *testing.T) {
 		t.Parallel()
 
 		testConn, err := test.GetTestConnection()
+		if err != nil {
+			t.Fatalf("get test connection: %v", err)
+
+			return
+		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 		defer cancel()
@@ -143,6 +153,7 @@ func TestSource_Read_PubSub(t *testing.T) {
 			if err != nil {
 				if errors.Is(err, sdk.ErrBackoffRetry) {
 					i--
+
 					continue
 				}
 				t.Fatalf("read message: %v", err)
