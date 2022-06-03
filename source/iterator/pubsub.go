@@ -72,9 +72,15 @@ func (i *PubSubIterator) Next(ctx context.Context) (sdk.Record, error) {
 }
 
 // Stop stops the PubSubIterator, unsubscribes from a subject.
-func (i *PubSubIterator) Stop() error {
+func (i *PubSubIterator) Stop() (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("recovered: %w", err)
+		}
+	}()
+
 	if i.subscription != nil {
-		if err := i.subscription.Unsubscribe(); err != nil {
+		if err = i.subscription.Unsubscribe(); err != nil {
 			return fmt.Errorf("unsubscribe: %w", err)
 		}
 	}
