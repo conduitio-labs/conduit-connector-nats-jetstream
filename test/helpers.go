@@ -12,18 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package test
 
 import (
-	nats "github.com/conduitio-labs/conduit-connector-nats"
-	"github.com/conduitio-labs/conduit-connector-nats/source"
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"fmt"
+
+	"github.com/nats-io/nats.go"
 )
 
-func main() {
-	sdk.Serve(sdk.Connector{
-		NewSpecification: nats.Specification,
-		NewSource:        source.NewSource,
-		NewDestination:   nil,
-	})
+var TestURL = "nats://127.0.0.1:4222"
+
+func GetTestConnection() (*nats.Conn, error) {
+	conn, err := nats.Connect(TestURL)
+	if err != nil {
+		return nil, fmt.Errorf("connect to NATS server: %s", err)
+	}
+
+	return conn, nil
 }
