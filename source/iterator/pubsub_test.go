@@ -76,8 +76,11 @@ func TestPubSubIterator_messageToRecord(t *testing.T) {
 				return
 			}
 
+			// copy tt.want in order to avoid race conditions with t.Parallel
+			copyWant := tt.want
+
 			// we don't care about time
-			tt.want.CreatedAt = got.CreatedAt
+			copyWant.CreatedAt = got.CreatedAt
 
 			// check if the position is a valid UUID
 			_, err = uuid.FromBytes(got.Position)
@@ -87,10 +90,10 @@ func TestPubSubIterator_messageToRecord(t *testing.T) {
 				return
 			}
 
-			tt.want.Position = got.Position
+			copyWant.Position = got.Position
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("PubSubIterator.messageToRecord() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, copyWant) {
+				t.Errorf("PubSubIterator.messageToRecord() = %v, want %v", got, copyWant)
 			}
 		})
 	}
