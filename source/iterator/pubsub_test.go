@@ -170,6 +170,7 @@ func TestPubSubIterator_Next(t *testing.T) {
 
 				if (err != nil) != tt.wantErr {
 					t.Errorf("PubSubIterator.Next() error = %v, wantErr %v", err, tt.wantErr)
+
 					return
 				}
 
