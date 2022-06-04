@@ -65,7 +65,7 @@ linters:
     - nlreturn
     - noctx
     - nolintlint
-    # - paralleltest
+    - paralleltest
     - predeclared
     - rowserrcheck
     - staticcheck
