@@ -45,7 +45,8 @@ func Test_position_marshalPosition(t *testing.T) {
 				OptSeq:  32,
 			},
 			want: sdk.Position(
-				`{"durable":"conduit_push_consumer","stream":"FOO_STREAM","subject":"foo_subject","opt_seq":32}`,
+				//nolint:lll // test
+				`{"durable":"conduit_push_consumer","stream":"FOO_STREAM","subject":"foo_subject","timestamp":"0001-01-01T00:00:00Z","opt_seq":32}`,
 			),
 			wantErr: false,
 		},
@@ -53,7 +54,7 @@ func Test_position_marshalPosition(t *testing.T) {
 			name:   "success, empty",
 			fields: fields{},
 			want: sdk.Position(
-				`{"durable":"","stream":"","subject":"","opt_seq":0}`,
+				`{"durable":"","stream":"","subject":"","timestamp":"0001-01-01T00:00:00Z","opt_seq":0}`,
 			),
 			wantErr: false,
 		},
@@ -79,7 +80,7 @@ func Test_position_marshalPosition(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("position.marshalPosition() = %v, want %v", got, tt.want)
+				t.Errorf("position.marshalPosition() = %v, want %v", string(got), string(tt.want))
 			}
 		})
 	}

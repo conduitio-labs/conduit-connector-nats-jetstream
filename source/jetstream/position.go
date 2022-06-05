@@ -17,16 +17,18 @@ package jetstream
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
 // position defines a position model for the JetStream iterator.
 type position struct {
-	Durable string `json:"durable"`
-	Stream  string `json:"stream"`
-	Subject string `json:"subject"`
-	OptSeq  uint64 `json:"opt_seq"`
+	Durable   string    `json:"durable"`
+	Stream    string    `json:"stream"`
+	Subject   string    `json:"subject"`
+	Timestamp time.Time `json:"timestamp"`
+	OptSeq    uint64    `json:"opt_seq"`
 }
 
 // marshalPosition marshals the underlying position into a sdk.Position as JSON bytes.
