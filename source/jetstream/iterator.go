@@ -114,16 +114,19 @@ func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
 
 // Ack acknowledges a message at the given position.
 func (i *Iterator) Ack(ctx context.Context, position sdk.Position) error {
+	// if ack policy is 'none' just return nil here
+	if i.consumerInfo.Config.AckPolicy == nats.AckNonePolicy {
+		return nil
+	}
+
 	i.Lock()
 	defer i.Unlock()
 
-	unackMessage := i.unackMessages[0]
-
-	if err := i.canAck(unackMessage, position); err != nil {
+	if err := i.canAck(position); err != nil {
 		return fmt.Errorf("message cannot be acknowledged: %w", err)
 	}
 
-	if err := unackMessage.Ack(); err != nil {
+	if err := i.unackMessages[0].Ack(); err != nil {
 		return fmt.Errorf("ack message: %w", err)
 	}
 
@@ -198,8 +201,12 @@ func getConsumerConfig(params IteratorParams, sdkPosition sdk.Position) (*nats.C
 }
 
 // canAck checks if the messages can be acknowledged.
-func (i *Iterator) canAck(msg *nats.Msg, sdkPosition sdk.Position) error {
-	position, err := i.getPosition(msg)
+func (i *Iterator) canAck(sdkPosition sdk.Position) error {
+	if len(i.unackMessages) == 0 {
+		return fmt.Errorf("requested ack for %q but no unacknowledged messages found", sdkPosition)
+	}
+
+	position, err := i.getPosition(i.unackMessages[0])
 	if err != nil {
 		return fmt.Errorf("get position: %w", err)
 	}
