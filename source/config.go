@@ -21,6 +21,7 @@ import (
 
 	"github.com/conduitio-labs/conduit-connector-nats/config"
 	"github.com/conduitio-labs/conduit-connector-nats/validator"
+	"github.com/nats-io/nats.go"
 )
 
 const (
@@ -30,10 +31,8 @@ const (
 	defaultBufferSize = 512
 	// defaultConsumerName is the default consumer name.
 	defaultConsumerName = "conduit_push_consumer"
-	// defaultDeliveryPolicy is the default delivery policy.
-	defaultDeliveryPolicy = "all"
-	// defaultAckPolicy is the default ack policy.
-	defaultAckPolicy = "all"
+	// defaultAckPolicy is the default message acknowledge policy.
+	defaultAckPolicy = nats.AckExplicitPolicy
 )
 
 const (
@@ -43,9 +42,7 @@ const (
 	ConfigKeyStreamName = "streamName"
 	// ConfigKeyDurable is a config name for a durable name.
 	ConfigKeyDurable = "durable"
-	// ConfigKeyDeliveryPolicy is a config name for a delivery policy.
-	ConfigKeyDeliveryPolicy = "deliveryPolicy"
-	// ConfigKeyAckPolicy is a config name for an ack policy.
+	// ConfigKeyAckPolicy is a config name for a message acknowledge policy.
 	ConfigKeyAckPolicy = "ackPolicy"
 )
 
@@ -56,11 +53,11 @@ type Config struct {
 	// For more detailed naming conventions see
 	// https://docs.nats.io/running-a-nats-service/nats_admin/jetstream_admin/naming.
 	StreamName string `key:"streamName" validate:"required_if=Mode jetstream,omitempty,alphanum,max=32"`
-	// The name of the Consumer, if set will make a consumer durable,
+	// Durable is the name of the Consumer, if set will make a consumer durable,
 	// allowing resuming consumption where left off.
-	Durable        string `key:"durable" validate:"required_if=Mode jetstream,omitempty"`
-	DeliveryPolicy string `key:"deliveryPolicy" validate:"omitempty,oneof=all new"`
-	AckPolicy      string `key:"ackPolicy" validate:"omitempty,oneof=all explicit none"`
+	Durable string `key:"durable" validate:"required_if=Mode jetstream,omitempty"`
+	// AckPolicy defines how messages should be acknowledged.
+	AckPolicy nats.AckPolicy `key:"ackPolicy" validate:"required_if=Mode jetstream,omitempty,oneof=0 1 2"`
 }
 
 // Parse maps the incoming map to the Config and validates it.
@@ -71,20 +68,17 @@ func Parse(cfg map[string]string) (Config, error) {
 	}
 
 	sourceConfig := Config{
-		Config:         common,
-		StreamName:     cfg[ConfigKeyStreamName],
-		Durable:        cfg[ConfigKeyDurable],
-		DeliveryPolicy: cfg[ConfigKeyDeliveryPolicy],
-		AckPolicy:      cfg[ConfigKeyAckPolicy],
+		Config:     common,
+		StreamName: cfg[ConfigKeyStreamName],
+		Durable:    cfg[ConfigKeyDurable],
 	}
 
-	if cfg[ConfigKeyBufferSize] != "" {
-		bufferSize, err := strconv.Atoi(cfg[ConfigKeyBufferSize])
-		if err != nil {
-			return Config{}, fmt.Errorf("\"%s\" must be an integer", ConfigKeyBufferSize)
-		}
+	if err := parseBufferSize(cfg[ConfigKeyBufferSize], &sourceConfig); err != nil {
+		return Config{}, fmt.Errorf("parse buffer size: %w", err)
+	}
 
-		sourceConfig.BufferSize = bufferSize
+	if err := parseAckPolicy(cfg[ConfigKeyAckPolicy], &sourceConfig); err != nil {
+		return Config{}, fmt.Errorf("parse ack policy: %w", err)
 	}
 
 	setDefaults(&sourceConfig)
@@ -94,6 +88,37 @@ func Parse(cfg map[string]string) (Config, error) {
 	}
 
 	return sourceConfig, nil
+}
+
+// parseBufferSize parses the bufferSize string and
+// if it's not empty set cfg.BufferSize to its integer representation.
+func parseBufferSize(bufferSizeStr string, cfg *Config) error {
+	if bufferSizeStr != "" {
+		bufferSize, err := strconv.Atoi(bufferSizeStr)
+		if err != nil {
+			return fmt.Errorf("\"%s\" must be an integer", ConfigKeyBufferSize)
+		}
+
+		cfg.BufferSize = bufferSize
+	}
+
+	return nil
+}
+
+// parseAckPolicy parses and converts the ackPolicy string into nats.AckPolicy.
+func parseAckPolicy(ackPolicyStr string, cfg *Config) error {
+	if ackPolicyStr != "" {
+		ackPolicy := nats.AckPolicy(0)
+
+		// the method requires ack policy string to be a JSON string, so we need that quotes
+		if err := ackPolicy.UnmarshalJSON([]byte("\"" + ackPolicyStr + "\"")); err != nil {
+			return fmt.Errorf("unmarshal ack policy: %w", err)
+		}
+
+		cfg.AckPolicy = ackPolicy
+	}
+
+	return nil
 }
 
 // setDefaults set default values for empty fields.
@@ -107,11 +132,7 @@ func setDefaults(cfg *Config) {
 			cfg.Durable = defaultConsumerName
 		}
 
-		if cfg.DeliveryPolicy == "" {
-			cfg.DeliveryPolicy = defaultDeliveryPolicy
-		}
-
-		if cfg.AckPolicy == "" {
+		if cfg.AckPolicy == 0 {
 			cfg.AckPolicy = defaultAckPolicy
 		}
 	}

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iterator
+package pubsub
 
 import (
 	"context"
@@ -24,23 +24,23 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// PubSubIterator is a iterator for Pub/Sub communication model.
+// Iterator is a iterator for Pub/Sub communication model.
 // It receives any new message from NATS.
-type PubSubIterator struct {
+type Iterator struct {
 	conn         *nats.Conn
 	messages     chan *nats.Msg
 	subscription *nats.Subscription
 }
 
-// PubSubIteratorParams contains incoming params for the NewPubSubIterator function.
-type PubSubIteratorParams struct {
+// IteratorParams contains incoming params for the NewIterator function.
+type IteratorParams struct {
 	Conn       *nats.Conn
 	BufferSize int
 	Subject    string
 }
 
-// NewPubSubIterator creates new instance of the PubSubIterator.
-func NewPubSubIterator(ctx context.Context, params PubSubIteratorParams) (*PubSubIterator, error) {
+// NewIterator creates new instance of the Iterator.
+func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) {
 	messages := make(chan *nats.Msg, params.BufferSize)
 
 	subscription, err := params.Conn.ChanSubscribe(params.Subject, messages)
@@ -48,7 +48,7 @@ func NewPubSubIterator(ctx context.Context, params PubSubIteratorParams) (*PubSu
 		return nil, fmt.Errorf("chan subscribe: %w", err)
 	}
 
-	return &PubSubIterator{
+	return &Iterator{
 		conn:         params.Conn,
 		messages:     messages,
 		subscription: subscription,
@@ -56,12 +56,12 @@ func NewPubSubIterator(ctx context.Context, params PubSubIteratorParams) (*PubSu
 }
 
 // HasNext checks is the iterator has messages.
-func (i *PubSubIterator) HasNext(ctx context.Context) bool {
+func (i *Iterator) HasNext(ctx context.Context) bool {
 	return len(i.messages) > 0
 }
 
 // Next returns the next record from the underlying messages channel.
-func (i *PubSubIterator) Next(ctx context.Context) (sdk.Record, error) {
+func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
 	select {
 	case msg := <-i.messages:
 		return i.messageToRecord(msg)
@@ -71,8 +71,14 @@ func (i *PubSubIterator) Next(ctx context.Context) (sdk.Record, error) {
 	}
 }
 
-// Stop stops the PubSubIterator, unsubscribes from a subject.
-func (i *PubSubIterator) Stop() (err error) {
+// Ack returns sdk.ErrUnimplemented,
+// we don't need anything here for Pub/Sub iterator.
+func (i *Iterator) Ack(ctx context.Context, position sdk.Position) error {
+	return sdk.ErrUnimplemented
+}
+
+// Stop stops the Iterator, unsubscribes from a subject.
+func (i *Iterator) Stop() (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("recovered: %w", err)
@@ -95,7 +101,7 @@ func (i *PubSubIterator) Stop() (err error) {
 }
 
 // messageToRecord converts a *nats.Msg to a sdk.Record.
-func (i *PubSubIterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
+func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
 	position, err := i.getPosition()
 	if err != nil {
 		return sdk.Record{}, fmt.Errorf("get position: %w", err)
@@ -109,7 +115,7 @@ func (i *PubSubIterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
 }
 
 // getPosition returns the current iterator position.
-func (i *PubSubIterator) getPosition() (sdk.Position, error) {
+func (i *Iterator) getPosition() (sdk.Position, error) {
 	uuidBytes, err := uuid.New().MarshalBinary()
 	if err != nil {
 		return nil, fmt.Errorf("marshal uuid: %w", err)

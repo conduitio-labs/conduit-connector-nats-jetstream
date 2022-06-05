@@ -17,6 +17,8 @@ package validator
 import "testing"
 
 func Test_getFieldKey(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		data      any
 		fieldName string
@@ -84,7 +86,11 @@ func Test_getFieldKey(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			if got := getFieldKey(tt.args.data, tt.args.fieldName); got != tt.want {
 				t.Errorf("getFieldKey() = %v, want %v", got, tt.want)
 			}

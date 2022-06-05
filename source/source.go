@@ -16,12 +16,12 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/conduitio-labs/conduit-connector-nats/config"
-	"github.com/conduitio-labs/conduit-connector-nats/source/iterator"
+	"github.com/conduitio-labs/conduit-connector-nats/source/jetstream"
+	"github.com/conduitio-labs/conduit-connector-nats/source/pubsub"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
@@ -30,14 +30,15 @@ import (
 type Iterator interface {
 	HasNext(ctx context.Context) bool
 	Next(ctx context.Context) (sdk.Record, error)
+	Ack(ctx context.Context, position sdk.Position) error
 	Stop() error
 }
 
 // Source operates source logic.
 type Source struct {
 	sdk.UnimplementedSource
-	config Config
-	it     Iterator
+	config   Config
+	iterator Iterator
 }
 
 // NewSource creates new instance of the Source.
@@ -71,7 +72,7 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 
 	switch s.config.Mode {
 	case config.PubSubConsumeMode:
-		s.it, err = iterator.NewPubSubIterator(ctx, iterator.PubSubIteratorParams{
+		s.iterator, err = pubsub.NewIterator(ctx, pubsub.IteratorParams{
 			Conn:       conn,
 			BufferSize: s.config.BufferSize,
 			Subject:    s.config.Subject,
@@ -81,7 +82,20 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		}
 
 	case config.JetStreamConsumeMode:
-		return errors.New("jetstream is not yet supported")
+		s.iterator, err = jetstream.NewIterator(ctx, jetstream.IteratorParams{
+			Conn:       conn,
+			BufferSize: s.config.BufferSize,
+			Durable:    s.config.Durable,
+			Stream:     s.config.StreamName,
+			Subject:    s.config.Subject,
+			AckPolicy:  s.config.AckPolicy,
+		}, position)
+		if err != nil {
+			return fmt.Errorf("init jetstream iterator: %w", err)
+		}
+
+	default:
+		return ErrUnknownCommunicationMode
 	}
 
 	return nil
@@ -90,11 +104,11 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 // Read fetches a record from an iterator.
 // If there's no record will return sdk.ErrBackoffRetry.
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
-	if !s.it.HasNext(ctx) {
+	if !s.iterator.HasNext(ctx) {
 		return sdk.Record{}, sdk.ErrBackoffRetry
 	}
 
-	record, err := s.it.Next(ctx)
+	record, err := s.iterator.Next(ctx)
 	if err != nil {
 		return sdk.Record{}, fmt.Errorf("read next record: %w", err)
 	}
@@ -102,10 +116,15 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 	return record, nil
 }
 
+// Ack acknowledges a message at the given position.
+func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
+	return s.iterator.Ack(ctx, position)
+}
+
 // Teardown closes connections, stops iterator.
 func (s *Source) Teardown(ctx context.Context) error {
-	if s.it != nil {
-		if err := s.it.Stop(); err != nil {
+	if s.iterator != nil {
+		if err := s.iterator.Stop(); err != nil {
 			return fmt.Errorf("stop iterator: %w", err)
 		}
 	}
