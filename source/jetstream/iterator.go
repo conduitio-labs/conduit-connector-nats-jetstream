@@ -200,13 +200,13 @@ func getConsumerConfig(params IteratorParams, sdkPosition sdk.Position) (*nats.C
 	}, nil
 }
 
-// canAck checks if the messages can be acknowledged.
+// canAck checks if a messages at the given position can be acknowledged.
 func (i *Iterator) canAck(sdkPosition sdk.Position) error {
 	if len(i.unackMessages) == 0 {
 		return fmt.Errorf("requested ack for %q but no unacknowledged messages found", sdkPosition)
 	}
 
-	position, err := i.getPosition(i.unackMessages[0])
+	position, err := i.getMessagePosition(i.unackMessages[0])
 	if err != nil {
 		return fmt.Errorf("get position: %w", err)
 	}
@@ -222,20 +222,30 @@ func (i *Iterator) canAck(sdkPosition sdk.Position) error {
 
 // messageToRecord converts a *nats.Msg to a sdk.Record.
 func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
-	position, err := i.getPosition(msg)
+	position, err := i.getMessagePosition(msg)
 	if err != nil {
 		return sdk.Record{}, fmt.Errorf("get position: %w", err)
 	}
 
+	// get metadata one more time to get metadata.Timestamp
+	metadata, err := msg.Metadata()
+	if err != nil {
+		return sdk.Record{}, fmt.Errorf("get message metadata: %w", err)
+	}
+
+	if metadata.Timestamp.IsZero() {
+		metadata.Timestamp = time.Now()
+	}
+
 	return sdk.Record{
 		Position:  position,
-		CreatedAt: time.Now(),
+		CreatedAt: metadata.Timestamp,
 		Payload:   sdk.RawData(msg.Data),
 	}, nil
 }
 
-// getPosition returns the current iterator position in the form of sdk.Position.
-func (i *Iterator) getPosition(msg *nats.Msg) (sdk.Position, error) {
+// getMessagePosition returns a position of a message in the form of sdk.Position.
+func (i *Iterator) getMessagePosition(msg *nats.Msg) (sdk.Position, error) {
 	metadata, err := msg.Metadata()
 	if err != nil {
 		return nil, fmt.Errorf("get message metadata: %w", err)
