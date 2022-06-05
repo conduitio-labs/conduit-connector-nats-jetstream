@@ -200,7 +200,7 @@ func getConsumerConfig(params IteratorParams, sdkPosition sdk.Position) (*nats.C
 	}, nil
 }
 
-// canAck checks if a messages at the given position can be acknowledged.
+// canAck checks if a message at the given position can be acknowledged.
 func (i *Iterator) canAck(sdkPosition sdk.Position) error {
 	if len(i.unackMessages) == 0 {
 		return fmt.Errorf("requested ack for %q but no unacknowledged messages found", sdkPosition)
