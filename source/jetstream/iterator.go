@@ -186,7 +186,7 @@ func getConsumerConfig(params IteratorParams) (*nats.ConsumerConfig, error) {
 		startSeq      uint64
 	)
 
-	// if the position has non-zero OptSeq
+	// if the position has a non-zero OptSeq
 	// the connector will start consuming from that position
 	if position.OptSeq != 0 {
 		deliverPolicy = nats.DeliverByStartSequencePolicy
