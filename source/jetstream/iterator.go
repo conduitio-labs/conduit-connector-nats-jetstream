@@ -72,9 +72,7 @@ func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) 
 
 	messages := make(chan *nats.Msg, params.BufferSize)
 
-	subscription, err := jetstream.ChanSubscribe(params.Subject, messages,
-		nats.Durable(consumerInfo.Config.Durable),
-	)
+	subscription, err := jetstream.ChanSubscribe(params.Subject, messages)
 	if err != nil {
 		return nil, fmt.Errorf("chan subscribe: %w", err)
 	}
