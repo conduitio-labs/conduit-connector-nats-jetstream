@@ -143,12 +143,6 @@ func (i *Iterator) Ack(ctx context.Context, sdkPosition sdk.Position) error {
 
 // Stop stops the Iterator, unsubscribes from a subject.
 func (i *Iterator) Stop() (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("recovered: %w", err)
-		}
-	}()
-
 	if i.subscription != nil {
 		if err = i.subscription.Unsubscribe(); err != nil {
 			return fmt.Errorf("unsubscribe: %w", err)
