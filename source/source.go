@@ -88,9 +88,10 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 			Durable:       s.config.Durable,
 			Stream:        s.config.StreamName,
 			Subject:       s.config.Subject,
+			SDKPosition:   position,
 			DeliverPolicy: s.config.DeliverPolicy,
 			AckPolicy:     s.config.AckPolicy,
-		}, position)
+		})
 		if err != nil {
 			return fmt.Errorf("init jetstream iterator: %w", err)
 		}

@@ -48,18 +48,19 @@ type IteratorParams struct {
 	Durable       string
 	Stream        string
 	Subject       string
+	SDKPosition   sdk.Position
 	DeliverPolicy nats.DeliverPolicy
 	AckPolicy     nats.AckPolicy
 }
 
 // NewIterator creates new instance of the Iterator.
-func NewIterator(ctx context.Context, params IteratorParams, sdkPosition sdk.Position) (*Iterator, error) {
+func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) {
 	jetstream, err := params.Conn.JetStream()
 	if err != nil {
 		return nil, fmt.Errorf("get jetstream context: %w", err)
 	}
 
-	consumerConfig, err := getConsumerConfig(params, sdkPosition)
+	consumerConfig, err := getConsumerConfig(params)
 	if err != nil {
 		return nil, fmt.Errorf("get consumer config: %w", err)
 	}
@@ -117,7 +118,7 @@ func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
 }
 
 // Ack acknowledges a message at the given position.
-func (i *Iterator) Ack(ctx context.Context, position sdk.Position) error {
+func (i *Iterator) Ack(ctx context.Context, sdkPosition sdk.Position) error {
 	// if ack policy is 'none' just return nil here
 	if i.consumerInfo.Config.AckPolicy == nats.AckNonePolicy {
 		return nil
@@ -126,7 +127,7 @@ func (i *Iterator) Ack(ctx context.Context, position sdk.Position) error {
 	i.Lock()
 	defer i.Unlock()
 
-	if err := i.canAck(position); err != nil {
+	if err := i.canAck(sdkPosition); err != nil {
 		return fmt.Errorf("message cannot be acknowledged: %w", err)
 	}
 
@@ -174,8 +175,8 @@ func (i *Iterator) Stop() (err error) {
 }
 
 // getConsumerConfig returns a *nats.ConsumerConfig based on the incoming params and a sdk.Position.
-func getConsumerConfig(params IteratorParams, sdkPosition sdk.Position) (*nats.ConsumerConfig, error) {
-	position, err := parsePosition(sdkPosition)
+func getConsumerConfig(params IteratorParams) (*nats.ConsumerConfig, error) {
+	position, err := parsePosition(params.SDKPosition)
 	if err != nil {
 		return nil, fmt.Errorf("parse position: %w", err)
 	}
