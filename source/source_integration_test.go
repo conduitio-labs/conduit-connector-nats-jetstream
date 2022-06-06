@@ -142,7 +142,7 @@ func TestSource_Read_PubSub(t *testing.T) {
 		defer cancel()
 
 		records := make([]sdk.Record, 0)
-		for i := 0; i < 1024; i++ {
+		for i := 0; i < 128; i++ {
 			err = testConn.Publish("foo", []byte(`{"level": "info"}`))
 			if err != nil {
 				t.Fatalf("publish message: %v", err)
@@ -165,8 +165,8 @@ func TestSource_Read_PubSub(t *testing.T) {
 			records = append(records, record)
 		}
 
-		if len(records) != 1024 {
-			t.Fatalf("len(records) = %d, expected = %d", len(records), 1024)
+		if len(records) != 128 {
+			t.Fatalf("len(records) = %d, expected = %d", len(records), 128)
 
 			return
 		}
