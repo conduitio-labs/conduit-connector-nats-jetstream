@@ -94,15 +94,15 @@ func Specification() sdk.Specification {
 				Required:    false,
 				Description: "A consumer name.",
 			},
-			source.ConfigKeyDeliveryPolicy: {
+			source.ConfigKeyDeliverPolicy: {
 				Default:     "all",
 				Required:    false,
-				Description: "A delivery policy.",
+				Description: "Defines where in the stream the connector should start receiving messages.",
 			},
 			source.ConfigKeyAckPolicy: {
-				Default:     "all",
+				Default:     "explicit",
 				Required:    false,
-				Description: "An acknowledge policy.",
+				Description: "Defines how messages should be acknowledged.",
 			},
 		},
 	}

@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/nats-io/nats.go"
 )
 
 func TestParse(t *testing.T) {
@@ -50,11 +51,11 @@ func TestParse(t *testing.T) {
 					Subject: "foo",
 					Mode:    "jetstream",
 				},
-				StreamName:     "SuperStream",
-				BufferSize:     defaultBufferSize,
-				Durable:        defaultConsumerName,
-				DeliveryPolicy: defaultDeliveryPolicy,
-				AckPolicy:      defaultAckPolicy,
+				StreamName:    "SuperStream",
+				BufferSize:    defaultBufferSize,
+				Durable:       defaultConsumerName,
+				DeliverPolicy: defaultDeliverPolicy,
+				AckPolicy:     defaultAckPolicy,
 			},
 			wantErr: false,
 		},
@@ -112,11 +113,11 @@ func TestParse(t *testing.T) {
 					Subject: "foo",
 					Mode:    "jetstream",
 				},
-				StreamName:     "stream",
-				BufferSize:     defaultBufferSize,
-				Durable:        defaultConsumerName,
-				DeliveryPolicy: defaultDeliveryPolicy,
-				AckPolicy:      defaultAckPolicy,
+				StreamName:    "stream",
+				BufferSize:    defaultBufferSize,
+				Durable:       defaultConsumerName,
+				DeliverPolicy: defaultDeliverPolicy,
+				AckPolicy:     defaultAckPolicy,
 			},
 			wantErr: false,
 		},
@@ -136,7 +137,9 @@ func TestParse(t *testing.T) {
 					Subject: "foo",
 					Mode:    "pubsub",
 				},
-				BufferSize: 128,
+				BufferSize:    128,
+				DeliverPolicy: defaultDeliverPolicy,
+				AckPolicy:     defaultAckPolicy,
 			},
 			wantErr: false,
 		},
@@ -155,7 +158,9 @@ func TestParse(t *testing.T) {
 					Subject: "foo",
 					Mode:    "pubsub",
 				},
-				BufferSize: defaultBufferSize,
+				BufferSize:    defaultBufferSize,
+				DeliverPolicy: defaultDeliverPolicy,
+				AckPolicy:     defaultAckPolicy,
 			},
 			wantErr: false,
 		},
@@ -185,9 +190,107 @@ func TestParse(t *testing.T) {
 			want:    Config{},
 			wantErr: true,
 		},
+		{
+			name: "success, all ack policy",
+			args: args{
+				cfg: map[string]string{
+					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.ConfigKeySubject: "foo",
+					config.ConfigKeyMode:    "pubsub",
+					ConfigKeyAckPolicy:      "all",
+				},
+			},
+			want: Config{
+				Config: config.Config{
+					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject: "foo",
+					Mode:    "pubsub",
+				},
+				BufferSize: defaultBufferSize,
+				AckPolicy:  nats.AckAllPolicy,
+			},
+			wantErr: false,
+		},
+		{
+			name: "success, none ack policy",
+			args: args{
+				cfg: map[string]string{
+					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.ConfigKeySubject: "foo",
+					config.ConfigKeyMode:    "pubsub",
+					ConfigKeyAckPolicy:      "none",
+				},
+			},
+			want: Config{
+				Config: config.Config{
+					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject: "foo",
+					Mode:    "pubsub",
+				},
+				BufferSize:    defaultBufferSize,
+				DeliverPolicy: defaultDeliverPolicy,
+				AckPolicy:     nats.AckNonePolicy,
+			},
+			wantErr: false,
+		},
+		{
+			name: "fail, invalid ack policy",
+			args: args{
+				cfg: map[string]string{
+					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.ConfigKeySubject: "foo",
+					config.ConfigKeyMode:    "pubsub",
+					ConfigKeyAckPolicy:      "wrong",
+				},
+			},
+			want:    Config{},
+			wantErr: true,
+		},
+		{
+			name: "success, deliver policy new",
+			args: args{
+				cfg: map[string]string{
+					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.ConfigKeySubject: "foo",
+					config.ConfigKeyMode:    "jetstream",
+					ConfigKeyStreamName:     "mystream",
+					ConfigKeyDeliverPolicy:  "new",
+					ConfigKeyAckPolicy:      "explicit",
+				},
+			},
+			want: Config{
+				Config: config.Config{
+					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject: "foo",
+					Mode:    "jetstream",
+				},
+				StreamName:    "mystream",
+				Durable:       defaultConsumerName,
+				BufferSize:    defaultBufferSize,
+				DeliverPolicy: nats.DeliverNewPolicy,
+				AckPolicy:     nats.AckExplicitPolicy,
+			},
+			wantErr: false,
+		},
+		{
+			name: "fail, invalid deliver policy",
+			args: args{
+				cfg: map[string]string{
+					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.ConfigKeySubject: "foo",
+					config.ConfigKeyMode:    "pubsub",
+					ConfigKeyDeliverPolicy:  "wrong",
+					ConfigKeyAckPolicy:      "explicit",
+				},
+			},
+			want:    Config{},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -197,6 +300,7 @@ func TestParse(t *testing.T) {
 
 				return
 			}
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Parse() = %v, want %v", got, tt.want)
 			}

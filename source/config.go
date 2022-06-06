@@ -16,11 +16,13 @@ package source
 
 import (
 	"fmt"
+	"strings"
 
 	"strconv"
 
 	"github.com/conduitio-labs/conduit-connector-nats/config"
 	"github.com/conduitio-labs/conduit-connector-nats/validator"
+	"github.com/nats-io/nats.go"
 )
 
 const (
@@ -30,10 +32,10 @@ const (
 	defaultBufferSize = 512
 	// defaultConsumerName is the default consumer name.
 	defaultConsumerName = "conduit_push_consumer"
-	// defaultDeliveryPolicy is the default delivery policy.
-	defaultDeliveryPolicy = "all"
-	// defaultAckPolicy is the default ack policy.
-	defaultAckPolicy = "all"
+	// defaultDeliverPolicy is the default message deliver policy.
+	defaultDeliverPolicy = nats.DeliverAllPolicy
+	// defaultAckPolicy is the default message acknowledge policy.
+	defaultAckPolicy = nats.AckExplicitPolicy
 )
 
 const (
@@ -43,9 +45,9 @@ const (
 	ConfigKeyStreamName = "streamName"
 	// ConfigKeyDurable is a config name for a durable name.
 	ConfigKeyDurable = "durable"
-	// ConfigKeyDeliveryPolicy is a config name for a delivery policy.
-	ConfigKeyDeliveryPolicy = "deliveryPolicy"
-	// ConfigKeyAckPolicy is a config name for an ack policy.
+	// ConfigKeyDeliverPolicy is a config name for a message deliver policy.
+	ConfigKeyDeliverPolicy = "deliverPolicy"
+	// ConfigKeyAckPolicy is a config name for a message acknowledge policy.
 	ConfigKeyAckPolicy = "ackPolicy"
 )
 
@@ -56,11 +58,13 @@ type Config struct {
 	// For more detailed naming conventions see
 	// https://docs.nats.io/running-a-nats-service/nats_admin/jetstream_admin/naming.
 	StreamName string `key:"streamName" validate:"required_if=Mode jetstream,omitempty,alphanum,max=32"`
-	// The name of the Consumer, if set will make a consumer durable,
+	// Durable is the name of the Consumer, if set will make a consumer durable,
 	// allowing resuming consumption where left off.
-	Durable        string `key:"durable" validate:"required_if=Mode jetstream,omitempty"`
-	DeliveryPolicy string `key:"deliveryPolicy" validate:"omitempty,oneof=all new"`
-	AckPolicy      string `key:"ackPolicy" validate:"omitempty,oneof=all explicit none"`
+	Durable string `key:"durable" validate:"required_if=Mode jetstream,omitempty"`
+	// DeliverPolicy defines where in the stream the connector should start receiving messages.
+	DeliverPolicy nats.DeliverPolicy `key:"deliverPolicy" validate:"oneof=0 2"`
+	// AckPolicy defines how messages should be acknowledged.
+	AckPolicy nats.AckPolicy `key:"ackPolicy" validate:"oneof=0 1 2"`
 }
 
 // Parse maps the incoming map to the Config and validates it.
@@ -71,23 +75,24 @@ func Parse(cfg map[string]string) (Config, error) {
 	}
 
 	sourceConfig := Config{
-		Config:         common,
-		StreamName:     cfg[ConfigKeyStreamName],
-		Durable:        cfg[ConfigKeyDurable],
-		DeliveryPolicy: cfg[ConfigKeyDeliveryPolicy],
-		AckPolicy:      cfg[ConfigKeyAckPolicy],
+		Config:     common,
+		StreamName: cfg[ConfigKeyStreamName],
+		Durable:    cfg[ConfigKeyDurable],
 	}
 
-	if cfg[ConfigKeyBufferSize] != "" {
-		bufferSize, err := strconv.Atoi(cfg[ConfigKeyBufferSize])
-		if err != nil {
-			return Config{}, fmt.Errorf("\"%s\" must be an integer", ConfigKeyBufferSize)
-		}
-
-		sourceConfig.BufferSize = bufferSize
+	if err := sourceConfig.parseBufferSize(cfg[ConfigKeyBufferSize]); err != nil {
+		return Config{}, fmt.Errorf("parse buffer size: %w", err)
 	}
 
-	setDefaults(&sourceConfig)
+	if err := sourceConfig.parseDeliverPolicy(cfg[ConfigKeyDeliverPolicy]); err != nil {
+		return Config{}, fmt.Errorf("parse deliver policy: %w", err)
+	}
+
+	if err := sourceConfig.parseAckPolicy(cfg[ConfigKeyAckPolicy]); err != nil {
+		return Config{}, fmt.Errorf("parse ack policy: %w", err)
+	}
+
+	sourceConfig.setDefaults()
 
 	if err := validator.Validate(&sourceConfig); err != nil {
 		return Config{}, fmt.Errorf("validate source config: %w", err)
@@ -96,23 +101,60 @@ func Parse(cfg map[string]string) (Config, error) {
 	return sourceConfig, nil
 }
 
-// setDefaults set default values for empty fields.
-func setDefaults(cfg *Config) {
-	if cfg.BufferSize == 0 {
-		cfg.BufferSize = defaultBufferSize
+// parseBufferSize parses the bufferSize string and
+// if it's not empty set cfg.BufferSize to its integer representation.
+func (c *Config) parseBufferSize(bufferSizeStr string) error {
+	if bufferSizeStr != "" {
+		bufferSize, err := strconv.Atoi(bufferSizeStr)
+		if err != nil {
+			return fmt.Errorf("\"%s\" must be an integer", ConfigKeyBufferSize)
+		}
+
+		c.BufferSize = bufferSize
 	}
 
-	if cfg.Mode == config.JetStreamConsumeMode {
-		if cfg.Durable == "" {
-			cfg.Durable = defaultConsumerName
-		}
+	return nil
+}
 
-		if cfg.DeliveryPolicy == "" {
-			cfg.DeliveryPolicy = defaultDeliveryPolicy
-		}
+// parseDeliverPolicy parses and converts the deliverPolicy string into nats.DeliverPolicy.
+func (c *Config) parseDeliverPolicy(deliverPolicyStr string) error {
+	switch strings.ToLower(deliverPolicyStr) {
+	case "all", "":
+		c.DeliverPolicy = nats.DeliverAllPolicy
+	case "new":
+		c.DeliverPolicy = nats.DeliverNewPolicy
+	default:
+		return fmt.Errorf("invalid deliver policy %q", deliverPolicyStr)
+	}
 
-		if cfg.AckPolicy == "" {
-			cfg.AckPolicy = defaultAckPolicy
+	return nil
+}
+
+// parseAckPolicy parses and converts the ackPolicy string into nats.AckPolicy.
+func (c *Config) parseAckPolicy(ackPolicyStr string) error {
+	switch strings.ToLower(ackPolicyStr) {
+	case "explicit", "":
+		c.AckPolicy = nats.AckExplicitPolicy
+	case "none":
+		c.AckPolicy = nats.AckNonePolicy
+	case "all":
+		c.AckPolicy = nats.AckAllPolicy
+	default:
+		return fmt.Errorf("invalid ack policy %q", ackPolicyStr)
+	}
+
+	return nil
+}
+
+// setDefaults set default values for empty fields.
+func (c *Config) setDefaults() {
+	if c.BufferSize == 0 {
+		c.BufferSize = defaultBufferSize
+	}
+
+	if c.Mode == config.JetStreamConsumeMode {
+		if c.Durable == "" {
+			c.Durable = defaultConsumerName
 		}
 	}
 }

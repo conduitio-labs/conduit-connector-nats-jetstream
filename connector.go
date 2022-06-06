@@ -12,23 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package test
+// Package nats implements NATS connector for Conduit. It provides both, a source and a destination NATS connector.
+package nats
 
 import (
-	"fmt"
-
-	"github.com/nats-io/nats.go"
+	"github.com/conduitio-labs/conduit-connector-nats/source"
+	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
-// TestURL is a URL of a test NATS server.
-var TestURL = "nats://127.0.0.1:4222"
-
-// GetTestConnection returns a connection to a test NATS server.
-func GetTestConnection() (*nats.Conn, error) {
-	conn, err := nats.Connect(TestURL)
-	if err != nil {
-		return nil, fmt.Errorf("connect to NATS server: %s", err)
-	}
-
-	return conn, nil
+var Connector = sdk.Connector{
+	NewSpecification: Specification,
+	NewSource:        source.NewSource,
+	NewDestination:   nil,
 }

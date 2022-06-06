@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iterator
+package pubsub
 
 import (
 	"context"
@@ -62,10 +62,12 @@ func TestPubSubIterator_HasNext(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			i := &PubSubIterator{
+			i := &Iterator{
 				messages: tt.fields.messages,
 			}
 
@@ -139,8 +141,12 @@ func TestPubSubIterator_Next(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
-			i := &PubSubIterator{
+			t.Parallel()
+
+			i := &Iterator{
 				messages: tt.fields.messages,
 			}
 
@@ -227,10 +233,12 @@ func TestPubSubIterator_messageToRecord(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
+
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			i := &PubSubIterator{}
+			i := &Iterator{}
 
 			got, err := i.messageToRecord(tt.args.msg)
 			if (err != nil) != tt.wantErr {

@@ -24,6 +24,7 @@ import (
 	"github.com/conduitio-labs/conduit-connector-nats/config"
 	"github.com/conduitio-labs/conduit-connector-nats/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/nats-io/nats.go"
 )
 
 func TestSource_Open(t *testing.T) {
@@ -141,7 +142,7 @@ func TestSource_Read_PubSub(t *testing.T) {
 		defer cancel()
 
 		records := make([]sdk.Record, 0)
-		for i := 0; i < 1024; i++ {
+		for i := 0; i < 128; i++ {
 			err = testConn.Publish("foo", []byte(`{"level": "info"}`))
 			if err != nil {
 				t.Fatalf("publish message: %v", err)
@@ -164,8 +165,8 @@ func TestSource_Read_PubSub(t *testing.T) {
 			records = append(records, record)
 		}
 
-		if len(records) != 1024 {
-			t.Fatalf("len(records) = %d, expected = %d", len(records), 1024)
+		if len(records) != 128 {
+			t.Fatalf("len(records) = %d, expected = %d", len(records), 128)
 
 			return
 		}
@@ -175,8 +176,141 @@ func TestSource_Read_PubSub(t *testing.T) {
 		t.Parallel()
 
 		_, err := source.Read(context.Background())
+		if err == nil {
+			t.Fatal("Source.Read expected backoff retry error, got nil")
+
+			return
+		}
+
 		if err != nil && !errors.Is(err, sdk.ErrBackoffRetry) {
 			t.Fatalf("read message: %v", err)
+
+			return
+		}
+	})
+}
+
+func TestSource_Read_JetStream(t *testing.T) {
+	t.Parallel()
+
+	source := NewSource()
+	err := source.Configure(context.Background(), map[string]string{
+		config.ConfigKeyURLs:    test.TestURL,
+		config.ConfigKeySubject: "foosss",
+		config.ConfigKeyMode:    "jetstream",
+		ConfigKeyStreamName:     "mystream",
+	})
+	if err != nil {
+		t.Fatalf("configure source: %v", err)
+
+		return
+	}
+
+	testConn, err := test.GetTestConnection()
+	if err != nil {
+		t.Fatalf("get test connection: %v", err)
+
+		return
+	}
+
+	js, err := testConn.JetStream()
+	if err != nil {
+		t.Fatalf("create jetstream context: %v", err)
+
+		return
+	}
+
+	_, err = js.AddStream(&nats.StreamConfig{
+		Name:     "mystream",
+		Subjects: []string{"foosss"},
+	})
+	if err != nil {
+		t.Fatalf("add stream: %v", err)
+
+		return
+	}
+
+	err = source.Open(context.Background(), sdk.Position(nil))
+	if err != nil {
+		t.Fatalf("open source: %v", err)
+
+		return
+	}
+
+	t.Cleanup(func() {
+		if err := source.Teardown(context.Background()); err != nil {
+			t.Fatalf("teardown source: %v", err)
+		}
+	})
+
+	t.Run("success, one message", func(t *testing.T) {
+		t.Parallel()
+
+		testConn, err := test.GetTestConnection()
+		if err != nil {
+			t.Fatalf("get test connection: %v", err)
+
+			return
+		}
+
+		err = testConn.Publish("foosss", []byte(`{"level": "info"}`))
+		if err != nil {
+			t.Fatalf("publish message: %v", err)
+
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+
+		var record sdk.Record
+		for {
+			record, err = source.Read(ctx)
+			if err != nil {
+				if errors.Is(err, sdk.ErrBackoffRetry) {
+					continue
+				}
+				t.Fatalf("read message: %v", err)
+
+				return
+			}
+
+			break
+		}
+
+		if !reflect.DeepEqual(record.Payload.Bytes(), []byte(`{"level": "info"}`)) {
+			t.Fatalf("Source.Read = %v, want %v", record.Payload.Bytes(), []byte(`{"level": "info"}`))
+
+			return
+		}
+
+		err = js.PurgeStream("mystream")
+		if err != nil {
+			t.Fatalf("purge stream: %v", err)
+
+			return
+		}
+	})
+
+	t.Run("success, no messages, backof retry", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := source.Read(context.Background())
+		if err == nil {
+			t.Fatal("Source.Read expected backoff retry error, got nil")
+
+			return
+		}
+
+		if err != nil && !errors.Is(err, sdk.ErrBackoffRetry) {
+			t.Fatalf("read message: %v", err)
+
+			return
+		}
+
+		err = js.PurgeStream("mystream")
+		if err != nil {
+			t.Fatalf("purge stream: %v", err)
 
 			return
 		}
