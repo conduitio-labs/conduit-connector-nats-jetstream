@@ -80,19 +80,19 @@ func Parse(cfg map[string]string) (Config, error) {
 		Durable:    cfg[ConfigKeyDurable],
 	}
 
-	if err := parseBufferSize(cfg[ConfigKeyBufferSize], &sourceConfig); err != nil {
+	if err := sourceConfig.parseBufferSize(cfg[ConfigKeyBufferSize]); err != nil {
 		return Config{}, fmt.Errorf("parse buffer size: %w", err)
 	}
 
-	if err := parseDeliverPolicy(cfg[ConfigKeyDeliverPolicy], &sourceConfig); err != nil {
+	if err := sourceConfig.parseDeliverPolicy(cfg[ConfigKeyDeliverPolicy]); err != nil {
 		return Config{}, fmt.Errorf("parse deliver policy: %w", err)
 	}
 
-	if err := parseAckPolicy(cfg[ConfigKeyAckPolicy], &sourceConfig); err != nil {
+	if err := sourceConfig.parseAckPolicy(cfg[ConfigKeyAckPolicy]); err != nil {
 		return Config{}, fmt.Errorf("parse ack policy: %w", err)
 	}
 
-	setDefaults(&sourceConfig)
+	sourceConfig.setDefaults()
 
 	if err := validator.Validate(&sourceConfig); err != nil {
 		return Config{}, fmt.Errorf("validate source config: %w", err)
@@ -103,26 +103,26 @@ func Parse(cfg map[string]string) (Config, error) {
 
 // parseBufferSize parses the bufferSize string and
 // if it's not empty set cfg.BufferSize to its integer representation.
-func parseBufferSize(bufferSizeStr string, cfg *Config) error {
+func (c *Config) parseBufferSize(bufferSizeStr string) error {
 	if bufferSizeStr != "" {
 		bufferSize, err := strconv.Atoi(bufferSizeStr)
 		if err != nil {
 			return fmt.Errorf("\"%s\" must be an integer", ConfigKeyBufferSize)
 		}
 
-		cfg.BufferSize = bufferSize
+		c.BufferSize = bufferSize
 	}
 
 	return nil
 }
 
 // parseDeliverPolicy parses and converts the deliverPolicy string into nats.DeliverPolicy.
-func parseDeliverPolicy(deliverPolicyStr string, cfg *Config) error {
+func (c *Config) parseDeliverPolicy(deliverPolicyStr string) error {
 	switch strings.ToLower(deliverPolicyStr) {
 	case "all", "":
-		cfg.DeliverPolicy = nats.DeliverAllPolicy
+		c.DeliverPolicy = nats.DeliverAllPolicy
 	case "new":
-		cfg.DeliverPolicy = nats.DeliverNewPolicy
+		c.DeliverPolicy = nats.DeliverNewPolicy
 	default:
 		return fmt.Errorf("invalid deliver policy %q", deliverPolicyStr)
 	}
@@ -131,14 +131,14 @@ func parseDeliverPolicy(deliverPolicyStr string, cfg *Config) error {
 }
 
 // parseAckPolicy parses and converts the ackPolicy string into nats.AckPolicy.
-func parseAckPolicy(ackPolicyStr string, cfg *Config) error {
+func (c *Config) parseAckPolicy(ackPolicyStr string) error {
 	switch strings.ToLower(ackPolicyStr) {
 	case "explicit", "":
-		cfg.AckPolicy = nats.AckExplicitPolicy
+		c.AckPolicy = nats.AckExplicitPolicy
 	case "none":
-		cfg.AckPolicy = nats.AckNonePolicy
+		c.AckPolicy = nats.AckNonePolicy
 	case "all":
-		cfg.AckPolicy = nats.AckAllPolicy
+		c.AckPolicy = nats.AckAllPolicy
 	default:
 		return fmt.Errorf("invalid ack policy %q", ackPolicyStr)
 	}
@@ -147,14 +147,14 @@ func parseAckPolicy(ackPolicyStr string, cfg *Config) error {
 }
 
 // setDefaults set default values for empty fields.
-func setDefaults(cfg *Config) {
-	if cfg.BufferSize == 0 {
-		cfg.BufferSize = defaultBufferSize
+func (c *Config) setDefaults() {
+	if c.BufferSize == 0 {
+		c.BufferSize = defaultBufferSize
 	}
 
-	if cfg.Mode == config.JetStreamConsumeMode {
-		if cfg.Durable == "" {
-			cfg.Durable = defaultConsumerName
+	if c.Mode == config.JetStreamConsumeMode {
+		if c.Durable == "" {
+			c.Durable = defaultConsumerName
 		}
 	}
 }
