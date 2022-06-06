@@ -97,7 +97,7 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		}
 
 	default:
-		return ErrUnknownCommunicationMode
+		return fmt.Errorf("unknown communication mode %q", s.config.Mode)
 	}
 
 	return nil
