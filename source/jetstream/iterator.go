@@ -94,6 +94,7 @@ func (i *Iterator) HasNext(ctx context.Context) bool {
 }
 
 // Next returns the next record from the underlying messages channel.
+// It also appends messages to a unackMessages slice if the AckPolicy is not equal to AckNonePolicy.
 func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
 	select {
 	case msg := <-i.messages:
@@ -102,9 +103,11 @@ func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
 			return sdk.Record{}, fmt.Errorf("convert message to record: %w", err)
 		}
 
-		i.Lock()
-		i.unackMessages = append(i.unackMessages, msg)
-		i.Unlock()
+		if i.consumerInfo.Config.AckPolicy != nats.AckNonePolicy {
+			i.Lock()
+			i.unackMessages = append(i.unackMessages, msg)
+			i.Unlock()
+		}
 
 		return sdkRecord, nil
 
