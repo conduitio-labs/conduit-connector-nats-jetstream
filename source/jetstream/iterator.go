@@ -43,12 +43,13 @@ type Iterator struct {
 
 // IteratorParams contains incoming params for the NewIterator function.
 type IteratorParams struct {
-	Conn       *nats.Conn
-	BufferSize int
-	Durable    string
-	Stream     string
-	Subject    string
-	AckPolicy  nats.AckPolicy
+	Conn          *nats.Conn
+	BufferSize    int
+	Durable       string
+	Stream        string
+	Subject       string
+	DeliverPolicy nats.DeliverPolicy
+	AckPolicy     nats.AckPolicy
 }
 
 // NewIterator creates new instance of the Iterator.
@@ -177,14 +178,14 @@ func getConsumerConfig(params IteratorParams, sdkPosition sdk.Position) (*nats.C
 	}
 
 	var (
-		deliveryPolicy = nats.DeliverAllPolicy
-		startSeq       uint64
+		deliverPolicy = params.DeliverPolicy
+		startSeq      uint64
 	)
 
 	// if the position has non-zero OptSeq
 	// the connector will start consuming from that position
 	if position.OptSeq != 0 {
-		deliveryPolicy = nats.DeliverByStartSequencePolicy
+		deliverPolicy = nats.DeliverByStartSequencePolicy
 		startSeq = position.OptSeq
 	}
 
@@ -192,7 +193,7 @@ func getConsumerConfig(params IteratorParams, sdkPosition sdk.Position) (*nats.C
 		Durable:        params.Durable,
 		ReplayPolicy:   nats.ReplayInstantPolicy,
 		DeliverSubject: fmt.Sprintf("%s.%s", params.Durable, params.Stream),
-		DeliverPolicy:  deliveryPolicy,
+		DeliverPolicy:  deliverPolicy,
 		OptStartSeq:    startSeq,
 		AckPolicy:      params.AckPolicy,
 		FlowControl:    true,
@@ -227,7 +228,8 @@ func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
 		return sdk.Record{}, fmt.Errorf("get position: %w", err)
 	}
 
-	// get metadata one more time to get metadata.Timestamp
+	// retrieve a message metadata one more time to grab a metadata.Timestamp
+	// and use it for a sdk.Record.CreatedAt
 	metadata, err := msg.Metadata()
 	if err != nil {
 		return sdk.Record{}, fmt.Errorf("get message metadata: %w", err)

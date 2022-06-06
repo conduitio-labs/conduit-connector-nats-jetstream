@@ -16,6 +16,7 @@ package source
 
 import (
 	"fmt"
+	"strings"
 
 	"strconv"
 
@@ -31,6 +32,8 @@ const (
 	defaultBufferSize = 512
 	// defaultConsumerName is the default consumer name.
 	defaultConsumerName = "conduit_push_consumer"
+	// defaultDeliverPolicy is the default message deliver policy.
+	defaultDeliverPolicy = nats.DeliverAllPolicy
 	// defaultAckPolicy is the default message acknowledge policy.
 	defaultAckPolicy = nats.AckExplicitPolicy
 )
@@ -42,6 +45,8 @@ const (
 	ConfigKeyStreamName = "streamName"
 	// ConfigKeyDurable is a config name for a durable name.
 	ConfigKeyDurable = "durable"
+	// ConfigKeyDeliverPolicy is a config name for a message deliver policy.
+	ConfigKeyDeliverPolicy = "deliverPolicy"
 	// ConfigKeyAckPolicy is a config name for a message acknowledge policy.
 	ConfigKeyAckPolicy = "ackPolicy"
 )
@@ -56,8 +61,10 @@ type Config struct {
 	// Durable is the name of the Consumer, if set will make a consumer durable,
 	// allowing resuming consumption where left off.
 	Durable string `key:"durable" validate:"required_if=Mode jetstream,omitempty"`
+	// DeliverPolicy defines where in the stream the connector should start receiving messages.
+	DeliverPolicy nats.DeliverPolicy `key:"deliverPolicy" validate:"oneof=0 2"`
 	// AckPolicy defines how messages should be acknowledged.
-	AckPolicy nats.AckPolicy `key:"ackPolicy" validate:"required_if=Mode jetstream,omitempty,oneof=0 1 2"`
+	AckPolicy nats.AckPolicy `key:"ackPolicy" validate:"oneof=0 1 2"`
 }
 
 // Parse maps the incoming map to the Config and validates it.
@@ -75,6 +82,10 @@ func Parse(cfg map[string]string) (Config, error) {
 
 	if err := parseBufferSize(cfg[ConfigKeyBufferSize], &sourceConfig); err != nil {
 		return Config{}, fmt.Errorf("parse buffer size: %w", err)
+	}
+
+	if err := parseDeliverPolicy(cfg[ConfigKeyDeliverPolicy], &sourceConfig); err != nil {
+		return Config{}, fmt.Errorf("parse deliver policy: %w", err)
 	}
 
 	if err := parseAckPolicy(cfg[ConfigKeyAckPolicy], &sourceConfig); err != nil {
@@ -105,17 +116,31 @@ func parseBufferSize(bufferSizeStr string, cfg *Config) error {
 	return nil
 }
 
+// parseDeliverPolicy parses and converts the deliverPolicy string into nats.DeliverPolicy.
+func parseDeliverPolicy(deliverPolicyStr string, cfg *Config) error {
+	switch strings.ToLower(deliverPolicyStr) {
+	case "all", "":
+		cfg.DeliverPolicy = nats.DeliverAllPolicy
+	case "new":
+		cfg.DeliverPolicy = nats.DeliverNewPolicy
+	default:
+		return fmt.Errorf("invalid deliver policy %q", deliverPolicyStr)
+	}
+
+	return nil
+}
+
 // parseAckPolicy parses and converts the ackPolicy string into nats.AckPolicy.
 func parseAckPolicy(ackPolicyStr string, cfg *Config) error {
-	if ackPolicyStr != "" {
-		ackPolicy := nats.AckPolicy(0)
-
-		// the method requires ack policy string to be a JSON string, so we need that quotes
-		if err := ackPolicy.UnmarshalJSON([]byte("\"" + ackPolicyStr + "\"")); err != nil {
-			return fmt.Errorf("unmarshal ack policy: %w", err)
-		}
-
-		cfg.AckPolicy = ackPolicy
+	switch strings.ToLower(ackPolicyStr) {
+	case "explicit", "":
+		cfg.AckPolicy = nats.AckExplicitPolicy
+	case "none":
+		cfg.AckPolicy = nats.AckNonePolicy
+	case "all":
+		cfg.AckPolicy = nats.AckAllPolicy
+	default:
+		return fmt.Errorf("invalid ack policy %q", ackPolicyStr)
 	}
 
 	return nil
@@ -130,10 +155,6 @@ func setDefaults(cfg *Config) {
 	if cfg.Mode == config.JetStreamConsumeMode {
 		if cfg.Durable == "" {
 			cfg.Durable = defaultConsumerName
-		}
-
-		if cfg.AckPolicy == 0 {
-			cfg.AckPolicy = defaultAckPolicy
 		}
 	}
 }

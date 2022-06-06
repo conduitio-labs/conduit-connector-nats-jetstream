@@ -83,12 +83,13 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 
 	case config.JetStreamConsumeMode:
 		s.iterator, err = jetstream.NewIterator(ctx, jetstream.IteratorParams{
-			Conn:       conn,
-			BufferSize: s.config.BufferSize,
-			Durable:    s.config.Durable,
-			Stream:     s.config.StreamName,
-			Subject:    s.config.Subject,
-			AckPolicy:  s.config.AckPolicy,
+			Conn:          conn,
+			BufferSize:    s.config.BufferSize,
+			Durable:       s.config.Durable,
+			Stream:        s.config.StreamName,
+			Subject:       s.config.Subject,
+			DeliverPolicy: s.config.DeliverPolicy,
+			AckPolicy:     s.config.AckPolicy,
 		}, position)
 		if err != nil {
 			return fmt.Errorf("init jetstream iterator: %w", err)

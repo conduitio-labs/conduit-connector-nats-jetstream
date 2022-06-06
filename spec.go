@@ -94,6 +94,11 @@ func Specification() sdk.Specification {
 				Required:    false,
 				Description: "A consumer name.",
 			},
+			source.ConfigKeyDeliverPolicy: {
+				Default:     "all",
+				Required:    false,
+				Description: "Defines where in the stream the connector should start receiving messages.",
+			},
 			source.ConfigKeyAckPolicy: {
 				Default:     "explicit",
 				Required:    false,
