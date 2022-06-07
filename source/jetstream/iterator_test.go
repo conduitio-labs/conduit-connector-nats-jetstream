@@ -148,7 +148,7 @@ func Test_getConsumerConfig(t *testing.T) {
 				ReplayPolicy:   nats.ReplayInstantPolicy,
 				DeliverSubject: "conduit_push_consumer.mystream",
 				DeliverPolicy:  nats.DeliverByStartSequencePolicy,
-				OptStartSeq:    3,
+				OptStartSeq:    4,
 				AckPolicy:      nats.AckExplicitPolicy,
 				FlowControl:    true,
 				Heartbeat:      2 * time.Second,

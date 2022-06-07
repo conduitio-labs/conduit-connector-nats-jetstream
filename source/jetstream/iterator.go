@@ -182,7 +182,9 @@ func getConsumerConfig(params IteratorParams) (*nats.ConsumerConfig, error) {
 	// the connector will start consuming from that position
 	if position.OptSeq != 0 {
 		deliverPolicy = nats.DeliverByStartSequencePolicy
-		startSeq = position.OptSeq
+		// add 1 to the sequence in order to skip the consumed message at this position
+		// and start consuming new messages
+		startSeq = position.OptSeq + 1
 	}
 
 	return &nats.ConsumerConfig{
@@ -254,9 +256,7 @@ func (i *Iterator) getMessagePosition(msg *nats.Msg) (sdk.Position, error) {
 		Stream:    i.consumerInfo.Stream,
 		Subject:   i.subscription.Subject,
 		Timestamp: metadata.Timestamp,
-		// add 1 to the sequence in order to skip the consumed message at this position
-		// and start consuming new messages
-		OptSeq: metadata.Sequence.Stream + 1,
+		OptSeq:    metadata.Sequence.Stream,
 	}
 
 	sdkPosition, err := position.marshalSDKPosition()
