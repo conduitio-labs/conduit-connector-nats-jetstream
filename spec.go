@@ -48,7 +48,7 @@ func Specification() sdk.Specification {
 				Description: "A communication mode to be used, must be either pubsub or jetstream.",
 			},
 			config.ConfigKeyConnectionName: {
-				Default:     "",
+				Default:     "conduit-connection-<uuid>",
 				Required:    false,
 				Description: "Optional connection name which will come in handy when it comes to monitoring.",
 			},
@@ -90,7 +90,7 @@ func Specification() sdk.Specification {
 				Description: "A stream name. Required if the connector in JetStream mode.",
 			},
 			source.ConfigKeyDurable: {
-				Default:     "conduit_push_consumer",
+				Default:     "conduit-<uuid>",
 				Required:    false,
 				Description: "A consumer name.",
 			},

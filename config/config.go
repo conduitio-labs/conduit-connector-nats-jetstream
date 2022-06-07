@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/conduitio-labs/conduit-connector-nats/validator"
+	"github.com/google/uuid"
 )
 
 // ConsumeMode represents a communication model.
@@ -29,6 +30,11 @@ const (
 	PubSubConsumeMode ConsumeMode = "pubsub"
 	// JetStreamConsumeMode is a JetStream communication model.
 	JetStreamConsumeMode ConsumeMode = "jetstream"
+)
+
+const (
+	// DefaultConnectionNamePrefix is the default connection name prefix.
+	DefaultConnectionNamePrefix = "conduit-connection-"
 )
 
 const (
@@ -87,9 +93,24 @@ func Parse(cfg map[string]string) (Config, error) {
 		TLSRootCACertPath:       cfg[ConfigKeyTLSRootCACertPath],
 	}
 
+	config.setDefaults()
+
 	if err := validator.Validate(&config); err != nil {
 		return Config{}, fmt.Errorf("validate config: %w", err)
 	}
 
 	return config, nil
+}
+
+// setDefaults set default values for empty fields.
+func (c *Config) setDefaults() {
+	if c.ConnectionName == "" {
+		c.ConnectionName = c.generateConnectionName()
+	}
+}
+
+// generateConnectionName generates a random connection name.
+// The connection name will be made up of the default connection name and a random UUID.
+func (c *Config) generateConnectionName() string {
+	return DefaultConnectionNamePrefix + uuid.New().String()
 }

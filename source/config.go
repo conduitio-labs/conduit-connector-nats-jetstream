@@ -55,6 +55,7 @@ const (
 // Config holds source specific configurable values.
 type Config struct {
 	config.Config
+
 	BufferSize int `key:"bufferSize" validate:"omitempty,min=64"`
 	// For more detailed naming conventions see
 	// https://docs.nats.io/running-a-nats-service/nats_admin/jetstream_admin/naming.
@@ -161,7 +162,7 @@ func (c *Config) setDefaults() {
 }
 
 // generateDurableName generates a random durable (consumer) name.
-// It composed with the default durable prefix and a random UUID.
+// The durable name will be made up of the default durable prefix and a random UUID.
 func (c *Config) generateDurableName() string {
 	return defaultDurablePrefix + uuid.New().String()
 }

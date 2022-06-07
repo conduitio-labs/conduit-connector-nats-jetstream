@@ -322,6 +322,10 @@ func TestParse(t *testing.T) {
 				return
 			}
 
+			if strings.HasPrefix(got.ConnectionName, config.DefaultConnectionNamePrefix) {
+				tt.want.ConnectionName = got.ConnectionName
+			}
+
 			if strings.HasPrefix(got.Durable, defaultDurablePrefix) {
 				tt.want.Durable = got.Durable
 			}
