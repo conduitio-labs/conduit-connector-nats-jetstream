@@ -29,7 +29,7 @@ const (
 	// defaultBufferSize is a default buffer size for consumed messages.
 	// It must be set to avoid the problem with slow consumers.
 	// See details about slow consumers here https://docs.nats.io/using-nats/developer/connecting/events/slow.
-	defaultBufferSize = 65536
+	defaultBufferSize = 1024
 	// defaultConsumerName is the default consumer name.
 	defaultConsumerName = "conduit_push_consumer"
 	// defaultDeliverPolicy is the default message deliver policy.
