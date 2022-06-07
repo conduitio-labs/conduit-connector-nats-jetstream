@@ -16,6 +16,7 @@ package source
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats/config"
@@ -53,7 +54,6 @@ func TestParse(t *testing.T) {
 				},
 				StreamName:    "SuperStream",
 				BufferSize:    defaultBufferSize,
-				Durable:       defaultConsumerName,
 				DeliverPolicy: defaultDeliverPolicy,
 				AckPolicy:     defaultAckPolicy,
 			},
@@ -115,7 +115,6 @@ func TestParse(t *testing.T) {
 				},
 				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
-				Durable:       defaultConsumerName,
 				DeliverPolicy: defaultDeliverPolicy,
 				AckPolicy:     defaultAckPolicy,
 			},
@@ -265,7 +264,6 @@ func TestParse(t *testing.T) {
 					Mode:    "jetstream",
 				},
 				StreamName:    "mystream",
-				Durable:       defaultConsumerName,
 				BufferSize:    defaultBufferSize,
 				DeliverPolicy: nats.DeliverNewPolicy,
 				AckPolicy:     nats.AckExplicitPolicy,
@@ -286,6 +284,29 @@ func TestParse(t *testing.T) {
 			want:    Config{},
 			wantErr: true,
 		},
+		{
+			name: "success, custom durable name",
+			args: args{
+				cfg: map[string]string{
+					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.ConfigKeySubject: "foo",
+					config.ConfigKeyMode:    "pubsub",
+					ConfigKeyDurable:        "my_super_durable",
+				},
+			},
+			want: Config{
+				Config: config.Config{
+					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject: "foo",
+					Mode:    "pubsub",
+				},
+				Durable:       "my_super_durable",
+				BufferSize:    defaultBufferSize,
+				DeliverPolicy: nats.DeliverAllPolicy,
+				AckPolicy:     nats.AckExplicitPolicy,
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -299,6 +320,14 @@ func TestParse(t *testing.T) {
 				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
 
 				return
+			}
+
+			if strings.HasPrefix(got.ConnectionName, config.DefaultConnectionNamePrefix) {
+				tt.want.ConnectionName = got.ConnectionName
+			}
+
+			if strings.HasPrefix(got.Durable, defaultDurablePrefix) {
+				tt.want.Durable = got.Durable
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {

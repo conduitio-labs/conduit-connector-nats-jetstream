@@ -16,11 +16,8 @@ package jetstream
 
 import (
 	"context"
-	"reflect"
 	"testing"
-	"time"
 
-	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
 
@@ -75,101 +72,6 @@ func TestIterator_HasNext(t *testing.T) {
 
 			if got := i.HasNext(context.Background()); got != tt.want {
 				t.Errorf("Iterator.HasNext() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_getConsumerConfig(t *testing.T) {
-	t.Parallel()
-
-	type args struct {
-		params IteratorParams
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    *nats.ConsumerConfig
-		wantErr bool
-	}{
-		{
-			name: "success, empty delivery and ack policies",
-			args: args{
-				params: IteratorParams{
-					Durable: "conduit_push_consumer",
-					Stream:  "mystream",
-				},
-			},
-			want: &nats.ConsumerConfig{
-				Durable:        "conduit_push_consumer",
-				ReplayPolicy:   nats.ReplayInstantPolicy,
-				DeliverSubject: "conduit_push_consumer.mystream",
-				DeliverPolicy:  nats.DeliverAllPolicy,
-				OptStartSeq:    0,
-				AckPolicy:      nats.AckNonePolicy,
-				FlowControl:    true,
-				Heartbeat:      2 * time.Second,
-			},
-		},
-		{
-			name: "success, custom delivery and ack policies",
-			args: args{
-				params: IteratorParams{
-					Durable:       "conduit_push_consumer",
-					Stream:        "mystream",
-					DeliverPolicy: nats.DeliverNewPolicy,
-					AckPolicy:     nats.AckExplicitPolicy,
-				},
-			},
-			want: &nats.ConsumerConfig{
-				Durable:        "conduit_push_consumer",
-				ReplayPolicy:   nats.ReplayInstantPolicy,
-				DeliverSubject: "conduit_push_consumer.mystream",
-				DeliverPolicy:  nats.DeliverNewPolicy,
-				OptStartSeq:    0,
-				AckPolicy:      nats.AckExplicitPolicy,
-				FlowControl:    true,
-				Heartbeat:      2 * time.Second,
-			},
-		},
-		{
-			name: "success, custom delivery and ack policies and position",
-			args: args{
-				params: IteratorParams{
-					Durable:       "conduit_push_consumer",
-					Stream:        "mystream",
-					SDKPosition:   sdk.Position(`{"opt_seq": 3}`),
-					DeliverPolicy: nats.DeliverAllPolicy,
-					AckPolicy:     nats.AckExplicitPolicy,
-				},
-			},
-			want: &nats.ConsumerConfig{
-				Durable:        "conduit_push_consumer",
-				ReplayPolicy:   nats.ReplayInstantPolicy,
-				DeliverSubject: "conduit_push_consumer.mystream",
-				DeliverPolicy:  nats.DeliverByStartSequencePolicy,
-				OptStartSeq:    3,
-				AckPolicy:      nats.AckExplicitPolicy,
-				FlowControl:    true,
-				Heartbeat:      2 * time.Second,
-			},
-		},
-	}
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			got, err := getConsumerConfig(tt.args.params)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getConsumerConfig() error = %v, wantErr %v", err, tt.wantErr)
-
-				return
-			}
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getConsumerConfig() = %v, want %v", got, tt.want)
 			}
 		})
 	}

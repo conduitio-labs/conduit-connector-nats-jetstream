@@ -60,23 +60,20 @@ func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) 
 		return nil, fmt.Errorf("get jetstream context: %w", err)
 	}
 
-	consumerConfig, err := getConsumerConfig(params)
+	consumerOpts, err := getConsumerOptions(params)
 	if err != nil {
-		return nil, fmt.Errorf("get consumer config: %w", err)
-	}
-
-	consumerInfo, err := jetstream.AddConsumer(params.Stream, consumerConfig)
-	if err != nil {
-		return nil, fmt.Errorf("add jetstream consumer: %w", err)
+		return nil, fmt.Errorf("get consumer options: %w", err)
 	}
 
 	messages := make(chan *nats.Msg, params.BufferSize)
-
-	subscription, err := jetstream.ChanSubscribe(params.Subject, messages,
-		nats.Durable(consumerInfo.Config.Durable),
-	)
+	subscription, err := jetstream.ChanSubscribe(params.Subject, messages, consumerOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("chan subscribe: %w", err)
+	}
+
+	consumerInfo, err := subscription.ConsumerInfo()
+	if err != nil {
+		return nil, fmt.Errorf("get consumer info: %w", err)
 	}
 
 	return &Iterator{
@@ -144,22 +141,13 @@ func (i *Iterator) Ack(ctx context.Context, sdkPosition sdk.Position) error {
 // Stop stops the Iterator, unsubscribes from a subject.
 func (i *Iterator) Stop() (err error) {
 	if i.subscription != nil {
+		// it will delete a consumer belonged to the subscription as well
 		if err = i.subscription.Unsubscribe(); err != nil {
 			return fmt.Errorf("unsubscribe: %w", err)
 		}
 	}
 
 	close(i.messages)
-
-	if i.jetstream != nil {
-		err := i.jetstream.DeleteConsumer(
-			i.consumerInfo.Stream,
-			i.consumerInfo.Name,
-		)
-		if err != nil {
-			return fmt.Errorf("delete consumer: %w", err)
-		}
-	}
 
 	if i.conn != nil {
 		i.conn.Close()
@@ -168,35 +156,49 @@ func (i *Iterator) Stop() (err error) {
 	return nil
 }
 
-// getConsumerConfig returns a *nats.ConsumerConfig based on the incoming params and a sdk.Position.
-func getConsumerConfig(params IteratorParams) (*nats.ConsumerConfig, error) {
+// getConsumerOptions returns a []nats.SubOpt slice based on the incoming params and a sdk.Position.
+func getConsumerOptions(params IteratorParams) ([]nats.SubOpt, error) {
+	opts := make([]nats.SubOpt, 0)
+
 	position, err := parsePosition(params.SDKPosition)
 	if err != nil {
 		return nil, fmt.Errorf("parse position: %w", err)
 	}
 
-	var (
-		deliverPolicy = params.DeliverPolicy
-		startSeq      uint64
-	)
-
 	// if the position has a non-zero OptSeq
 	// the connector will start consuming from that position
 	if position.OptSeq != 0 {
-		deliverPolicy = nats.DeliverByStartSequencePolicy
-		startSeq = position.OptSeq
+		// add 1 to the sequence in order to skip the consumed message at this position
+		// and start consuming new messages
+		// deliverPolicy in this case will become a DeliverByStartSequencePolicy.
+		opts = append(opts, nats.StartSequence(position.OptSeq+1))
+	} else {
+		switch params.DeliverPolicy {
+		case nats.DeliverAllPolicy:
+			opts = append(opts, nats.DeliverAll())
+		case nats.DeliverNewPolicy:
+			opts = append(opts, nats.DeliverNew())
+		}
 	}
 
-	return &nats.ConsumerConfig{
-		Durable:        params.Durable,
-		ReplayPolicy:   nats.ReplayInstantPolicy,
-		DeliverSubject: fmt.Sprintf("%s.%s", params.Durable, params.Stream),
-		DeliverPolicy:  deliverPolicy,
-		OptStartSeq:    startSeq,
-		AckPolicy:      params.AckPolicy,
-		FlowControl:    true,
-		Heartbeat:      heartbeatTimeout,
-	}, nil
+	switch params.AckPolicy {
+	case nats.AckAllPolicy:
+		opts = append(opts, nats.AckAll())
+	case nats.AckExplicitPolicy:
+		opts = append(opts, nats.AckExplicit())
+	case nats.AckNonePolicy:
+		opts = append(opts, nats.AckNone())
+	}
+
+	opts = append(opts, []nats.SubOpt{
+		nats.Durable(params.Durable),
+		nats.ReplayInstant(),
+		nats.DeliverSubject(fmt.Sprintf("%s.%s", params.Durable, params.Stream)),
+		nats.EnableFlowControl(),
+		nats.IdleHeartbeat(heartbeatTimeout),
+	}...)
+
+	return opts, nil
 }
 
 // canAck checks if a message at the given position can be acknowledged.
@@ -256,9 +258,7 @@ func (i *Iterator) getMessagePosition(msg *nats.Msg) (sdk.Position, error) {
 		Stream:    i.consumerInfo.Stream,
 		Subject:   i.subscription.Subject,
 		Timestamp: metadata.Timestamp,
-		// add 1 to the sequence in order to skip the consumed message at this position
-		// and start consuming new messages
-		OptSeq: metadata.Sequence.Stream + 1,
+		OptSeq:    metadata.Sequence.Stream,
 	}
 
 	sdkPosition, err := position.marshalSDKPosition()

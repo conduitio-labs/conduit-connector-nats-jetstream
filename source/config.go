@@ -22,6 +22,7 @@ import (
 
 	"github.com/conduitio-labs/conduit-connector-nats/config"
 	"github.com/conduitio-labs/conduit-connector-nats/validator"
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 )
 
@@ -29,9 +30,9 @@ const (
 	// defaultBufferSize is a default buffer size for consumed messages.
 	// It must be set to avoid the problem with slow consumers.
 	// See details about slow consumers here https://docs.nats.io/using-nats/developer/connecting/events/slow.
-	defaultBufferSize = 512
-	// defaultConsumerName is the default consumer name.
-	defaultConsumerName = "conduit_push_consumer"
+	defaultBufferSize = 1024
+	// defaultDurablePrefix is the default consumer name prefix.
+	defaultDurablePrefix = "conduit-"
 	// defaultDeliverPolicy is the default message deliver policy.
 	defaultDeliverPolicy = nats.DeliverAllPolicy
 	// defaultAckPolicy is the default message acknowledge policy.
@@ -54,6 +55,7 @@ const (
 // Config holds source specific configurable values.
 type Config struct {
 	config.Config
+
 	BufferSize int `key:"bufferSize" validate:"omitempty,min=64"`
 	// For more detailed naming conventions see
 	// https://docs.nats.io/running-a-nats-service/nats_admin/jetstream_admin/naming.
@@ -154,7 +156,13 @@ func (c *Config) setDefaults() {
 
 	if c.Mode == config.JetStreamConsumeMode {
 		if c.Durable == "" {
-			c.Durable = defaultConsumerName
+			c.Durable = c.generateDurableName()
 		}
 	}
+}
+
+// generateDurableName generates a random durable (consumer) name.
+// The durable name will be made up of the default durable prefix and a random UUID.
+func (c *Config) generateDurableName() string {
+	return defaultDurablePrefix + uuid.New().String()
 }

@@ -16,6 +16,7 @@ package config
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -196,6 +197,24 @@ func TestParse(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "success, custom connection name",
+			args: args{
+				cfg: map[string]string{
+					ConfigKeyURLs:           "nats://127.0.0.1:1222",
+					ConfigKeySubject:        "foo",
+					ConfigKeyMode:           "pubsub",
+					ConfigKeyConnectionName: "my_super_connection",
+				},
+			},
+			want: Config{
+				URLs:           []string{"nats://127.0.0.1:1222"},
+				Subject:        "foo",
+				Mode:           "pubsub",
+				ConnectionName: "my_super_connection",
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -210,6 +229,11 @@ func TestParse(t *testing.T) {
 
 				return
 			}
+
+			if strings.HasPrefix(got.ConnectionName, DefaultConnectionNamePrefix) {
+				tt.want.ConnectionName = got.ConnectionName
+			}
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Parse() = %v, want %v", got, tt.want)
 			}
