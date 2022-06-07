@@ -80,7 +80,7 @@ func Specification() sdk.Specification {
 				Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",
 			},
 			source.ConfigKeyBufferSize: {
-				Default:     "65536",
+				Default:     "1024",
 				Required:    false,
 				Description: "A buffer size for consumed messages.",
 			},
