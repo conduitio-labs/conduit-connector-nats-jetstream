@@ -31,8 +31,8 @@ const (
 	// It must be set to avoid the problem with slow consumers.
 	// See details about slow consumers here https://docs.nats.io/using-nats/developer/connecting/events/slow.
 	defaultBufferSize = 1024
-	// defaultConsumerNamePrefix is the default consumer name prefix.
-	defaultConsumerNamePrefix = "conduit-"
+	// defaultDurablePrefix is the default consumer name prefix.
+	defaultDurablePrefix = "conduit-"
 	// defaultDeliverPolicy is the default message deliver policy.
 	defaultDeliverPolicy = nats.DeliverAllPolicy
 	// defaultAckPolicy is the default message acknowledge policy.
@@ -155,13 +155,13 @@ func (c *Config) setDefaults() {
 
 	if c.Mode == config.JetStreamConsumeMode {
 		if c.Durable == "" {
-			c.Durable = c.generateConsumerName()
+			c.Durable = c.generateDurableName()
 		}
 	}
 }
 
-// generateConsumerName generates a random consumer name.
-// It composed with the default consumer prefix and a random UUID.
-func (c *Config) generateConsumerName() string {
-	return defaultConsumerNamePrefix + uuid.New().String()
+// generateDurableName generates a random durable (consumer) name.
+// It composed with the default durable prefix and a random UUID.
+func (c *Config) generateDurableName() string {
+	return defaultDurablePrefix + uuid.New().String()
 }
