@@ -31,7 +31,7 @@ func Specification() sdk.Specification {
 			"It provides both, a source and a destination NATS connector.",
 		Version: "v0.1.0",
 		Author:  "Meroxa, Inc.",
-		DestinationParams: map[string]sdk.Parameter{
+		SourceParams: map[string]sdk.Parameter{
 			config.ConfigKeyURLs: {
 				Default:     "",
 				Required:    true,
