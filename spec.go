@@ -105,5 +105,54 @@ func Specification() sdk.Specification {
 				Description: "Defines how messages should be acknowledged.",
 			},
 		},
+		DestinationParams: map[string]sdk.Parameter{
+			config.ConfigKeyURLs: {
+				Default:     "",
+				Required:    true,
+				Description: "The connection URLs pointed to NATS instances.",
+			},
+			config.ConfigKeySubject: {
+				Default:     "",
+				Required:    true,
+				Description: "A name of a subject from which or to which the connector should read/write.",
+			},
+			config.ConfigKeyMode: {
+				Default:     "",
+				Required:    true,
+				Description: "A communication mode to be used, must be either pubsub or jetstream.",
+			},
+			config.ConfigKeyConnectionName: {
+				Default:     "conduit-connection-<uuid>",
+				Required:    false,
+				Description: "Optional connection name which will come in handy when it comes to monitoring.",
+			},
+			config.ConfigKeyNKeyPath: {
+				Default:     "",
+				Required:    false,
+				Description: "A path pointed to a NKey pair.",
+			},
+			config.ConfigKeyCredentialsFilePath: {
+				Default:     "",
+				Required:    false,
+				Description: "A path pointed to a credentials file.",
+			},
+			config.ConfigKeyTLSClientCertPath: {
+				Default:  "",
+				Required: false,
+				//nolint:lll // long description
+				Description: "A path pointed to a TLS client certificate, must be present if tlsClientPrivateKeyPath field is also present.",
+			},
+			config.ConfigKeyTLSClientPrivateKeyPath: {
+				Default:  "",
+				Required: false,
+				//nolint:lll // long description
+				Description: "A path pointed to a TLS client private key, must be present if tlsClientCertPath field is also present.",
+			},
+			config.ConfigKeyTLSRootCACertPath: {
+				Default:     "",
+				Required:    false,
+				Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",
+			},
+		},
 	}
 }
