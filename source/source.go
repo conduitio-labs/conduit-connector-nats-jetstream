@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/conduitio-labs/conduit-connector-nats/common"
 	"github.com/conduitio-labs/conduit-connector-nats/config"
 	"github.com/conduitio-labs/conduit-connector-nats/source/jetstream"
 	"github.com/conduitio-labs/conduit-connector-nats/source/pubsub"
@@ -37,6 +38,7 @@ type Iterator interface {
 // Source operates source logic.
 type Source struct {
 	sdk.UnimplementedSource
+
 	config   Config
 	iterator Iterator
 }
@@ -60,7 +62,7 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 
 // Open opens a connection to NATS and initializes iterators.
 func (s *Source) Open(ctx context.Context, position sdk.Position) error {
-	opts, err := s.getConnectionOptions()
+	opts, err := common.GetConnectionOptions(s.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %w", err)
 	}
@@ -132,39 +134,4 @@ func (s *Source) Teardown(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// getConnectionOptions returns connection options based on the config.
-func (s *Source) getConnectionOptions() ([]nats.Option, error) {
-	var opts []nats.Option
-
-	if s.config.ConnectionName != "" {
-		opts = append(opts, nats.Name(s.config.ConnectionName))
-	}
-
-	if s.config.NKeyPath != "" {
-		opt, err := nats.NkeyOptionFromSeed(s.config.NKeyPath)
-		if err != nil {
-			return nil, fmt.Errorf("load NKey pair: %w", err)
-		}
-
-		opts = append(opts, opt)
-	}
-
-	if s.config.CredentialsFilePath != "" {
-		opts = append(opts, nats.UserCredentials(s.config.CredentialsFilePath))
-	}
-
-	if s.config.TLSClientCertPath != "" && s.config.TLSClientPrivateKeyPath != "" {
-		opts = append(opts, nats.ClientCert(
-			s.config.TLSClientCertPath,
-			s.config.TLSClientPrivateKeyPath,
-		))
-	}
-
-	if s.config.TLSRootCACertPath != "" {
-		opts = append(opts, nats.RootCAs(s.config.TLSRootCACertPath))
-	}
-
-	return opts, nil
 }
