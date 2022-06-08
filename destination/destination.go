@@ -110,5 +110,9 @@ func (d *Destination) Flush(ctx context.Context) error {
 
 // Teardown gracefully closes connections.
 func (d *Destination) Teardown(ctx context.Context) error {
-	return d.writer.Close(ctx)
+	if d.writer != nil {
+		return d.writer.Close(ctx)
+	}
+
+	return nil
 }
