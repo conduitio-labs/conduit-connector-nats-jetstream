@@ -12,17 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package nats implements NATS connector for Conduit. It provides both, a source and a destination NATS connector.
-package nats
+package destination
 
 import (
-	"github.com/conduitio-labs/conduit-connector-nats/destination"
-	"github.com/conduitio-labs/conduit-connector-nats/source"
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"fmt"
+
+	"github.com/conduitio-labs/conduit-connector-nats/config"
 )
 
-var Connector = sdk.Connector{
-	NewSpecification: Specification,
-	NewSource:        source.NewSource,
-	NewDestination:   destination.NewDestination,
+// Config holds destination specific configurable values.
+type Config struct {
+	config.Config
+}
+
+// Parse maps the incoming map to the Config and validates it.
+func Parse(cfg map[string]string) (Config, error) {
+	common, err := config.Parse(cfg)
+	if err != nil {
+		return Config{}, fmt.Errorf("parse common config: %w", err)
+	}
+
+	destinationConfig := Config{
+		Config: common,
+	}
+
+	return destinationConfig, nil
 }
