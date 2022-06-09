@@ -22,6 +22,7 @@ import (
 
 	"github.com/conduitio-labs/conduit-connector-nats/common"
 	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/conduitio-labs/conduit-connector-nats/destination/jetstream"
 	"github.com/conduitio-labs/conduit-connector-nats/destination/pubsub"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
@@ -30,7 +31,7 @@ import (
 // Writer defines a writer interface needed for the Destination.
 type Writer interface {
 	Write(ctx context.Context, record sdk.Record) error
-	WriteAsync(ctx context.Context, record sdk.Record, ackFunc sdk.AckFunc) error
+	WriteAsync(ctx context.Context, record sdk.Record, ackFunc sdk.AckFunc) (batchIsFull bool, err error)
 	Flush(ctx context.Context) error
 	Close(ctx context.Context) error
 }
@@ -83,7 +84,16 @@ func (d *Destination) Open(ctx context.Context) error {
 		}
 
 	case config.JetStreamConsumeMode:
-		return errors.New("jetstream mode is not currently supported")
+		d.writer, err = jetstream.NewWriter(ctx, jetstream.WriterParams{
+			Conn:          conn,
+			Subject:       d.config.Subject,
+			BatchSize:     d.config.BatchSize,
+			RetryWait:     d.config.RetryWait,
+			RetryAttempts: d.config.RetryAttempts,
+		})
+		if err != nil {
+			return fmt.Errorf("init jetstream writer: %w", err)
+		}
 
 	default:
 		return fmt.Errorf("unknown communication mode %q", d.config.Mode)
@@ -99,11 +109,26 @@ func (d *Destination) Write(ctx context.Context, record sdk.Record) error {
 
 // WriteAsync asynchronously writes a record into a Destination.
 // Currently only JetStream mode supports it, PubSub will raise a sdk.ErrUnimplemented error.
+// JetStream supports it when the batchSize is greater than 1, otherwise the method will fallback to Write.
+// When a batch is full the method calls Flush.
 func (d *Destination) WriteAsync(ctx context.Context, record sdk.Record, ackFunc sdk.AckFunc) error {
-	return d.writer.WriteAsync(ctx, record, ackFunc)
+	batchIsFull, err := d.writer.WriteAsync(ctx, record, ackFunc)
+	if err != nil {
+		if errors.Is(err, sdk.ErrUnimplemented) {
+			return sdk.ErrUnimplemented
+		}
+
+		return fmt.Errorf("write async: %w", err)
+	}
+
+	if batchIsFull {
+		return d.Flush(ctx)
+	}
+
+	return nil
 }
 
-// Flush flushes buffered records.
+// Flush flushes batched records.
 func (d *Destination) Flush(ctx context.Context) error {
 	return d.writer.Flush(ctx)
 }

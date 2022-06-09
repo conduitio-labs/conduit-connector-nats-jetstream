@@ -16,13 +16,41 @@ package destination
 
 import (
 	"fmt"
+	"strconv"
+	"time"
 
 	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/conduitio-labs/conduit-connector-nats/validator"
+)
+
+const (
+	// defaultBatchSize is the default batch size,
+	// it's equal to 1 which means that each message will be published synchronously.
+	defaultBatchSize = 1
+	// defaultRetryWait is the default retry wait time when ErrNoResponders is encountered.
+	defaultRetryWait = time.Second * 5
+	// defaultRetryAttempts is the retry number of attempts when ErrNoResponders is encountered.
+	defaultRetryAttempts = 3
+)
+
+const (
+	// ConfigKeyBatchSize is a config name for a batch size.
+	ConfigKeyBatchSize = "batchSize"
+	// ConfigKeyRetryWait is a config name for a retry wait duration.
+	ConfigKeyRetryWait = "retryWait"
+	// ConfigKeyRetryAttempts is a config name for a retry attempts count.
+	ConfigKeyRetryAttempts = "retryAttempts"
 )
 
 // Config holds destination specific configurable values.
 type Config struct {
 	config.Config
+
+	// BatchSize is a message batch size used with JetStream mode for async message writes.
+	// If it's equal to 1 messages will be published synchronously.
+	BatchSize     int           `key:"batchSize" validate:"min=1"`
+	RetryWait     time.Duration `key:"retryWait"`
+	RetryAttempts int           `key:"retryAttempts"`
 }
 
 // Parse maps the incoming map to the Config and validates it.
@@ -36,5 +64,51 @@ func Parse(cfg map[string]string) (Config, error) {
 		Config: common,
 	}
 
+	if err := destinationConfig.parseFields(cfg); err != nil {
+		return Config{}, fmt.Errorf("parse fields: %w", err)
+	}
+
+	if err := validator.Validate(&destinationConfig); err != nil {
+		return Config{}, fmt.Errorf("validate destination config: %w", err)
+	}
+
 	return destinationConfig, nil
+}
+
+// parseFields parses non-string fields and set default values for empty fields.
+func (c *Config) parseFields(cfg map[string]string) error {
+	if cfg[ConfigKeyBatchSize] != "" {
+		batchSize, err := strconv.Atoi(cfg[ConfigKeyBatchSize])
+		if err != nil {
+			return fmt.Errorf("parse %q: %w", ConfigKeyBatchSize, err)
+		}
+
+		c.BatchSize = batchSize
+	} else {
+		c.BatchSize = defaultBatchSize
+	}
+
+	if cfg[ConfigKeyRetryWait] != "" {
+		retryWait, err := time.ParseDuration(cfg[ConfigKeyRetryWait])
+		if err != nil {
+			return fmt.Errorf("parse %q: %w", ConfigKeyRetryWait, err)
+		}
+
+		c.RetryWait = retryWait
+	} else {
+		c.RetryWait = defaultRetryWait
+	}
+
+	if cfg[ConfigKeyRetryAttempts] != "" {
+		retryAttempts, err := strconv.Atoi(cfg[ConfigKeyRetryAttempts])
+		if err != nil {
+			return fmt.Errorf("parse %q: %w", ConfigKeyRetryAttempts, err)
+		}
+
+		c.RetryAttempts = retryAttempts
+	} else {
+		c.RetryAttempts = defaultRetryAttempts
+	}
+
+	return nil
 }
