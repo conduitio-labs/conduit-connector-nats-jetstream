@@ -134,12 +134,10 @@ func (w *Writer) Flush(ctx context.Context) error {
 	select {
 	case <-w.jetstream.PublishAsyncComplete():
 		for i, future := range futures {
-			sdk.Logger(ctx).Info().Msgf("processed: %d", i)
-
 			select {
 			case <-future.Ok():
 				if err := messagesBatch[i].ackFunc(nil); err != nil {
-					sdk.Logger(ctx).Err(fmt.Errorf("ack func: %w", err))
+					return fmt.Errorf("ack func: %w", err)
 				}
 
 			case err := <-future.Err():
@@ -148,7 +146,7 @@ func (w *Writer) Flush(ctx context.Context) error {
 				)
 
 				if err := messagesBatch[i].ackFunc(err); err != nil {
-					sdk.Logger(ctx).Err(fmt.Errorf("ack func: %w", err))
+					return fmt.Errorf("ack func: %w", err)
 				}
 			}
 		}
