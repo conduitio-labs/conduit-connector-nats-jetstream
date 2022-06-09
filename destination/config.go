@@ -77,6 +77,7 @@ func Parse(cfg map[string]string) (Config, error) {
 
 // parseFields parses non-string fields and set default values for empty fields.
 func (c *Config) parseFields(cfg map[string]string) error {
+	c.BatchSize = defaultBatchSize
 	if cfg[ConfigKeyBatchSize] != "" {
 		batchSize, err := strconv.Atoi(cfg[ConfigKeyBatchSize])
 		if err != nil {
@@ -84,10 +85,9 @@ func (c *Config) parseFields(cfg map[string]string) error {
 		}
 
 		c.BatchSize = batchSize
-	} else {
-		c.BatchSize = defaultBatchSize
 	}
 
+	c.RetryWait = defaultRetryWait
 	if cfg[ConfigKeyRetryWait] != "" {
 		retryWait, err := time.ParseDuration(cfg[ConfigKeyRetryWait])
 		if err != nil {
@@ -95,10 +95,9 @@ func (c *Config) parseFields(cfg map[string]string) error {
 		}
 
 		c.RetryWait = retryWait
-	} else {
-		c.RetryWait = defaultRetryWait
 	}
 
+	c.RetryAttempts = defaultRetryAttempts
 	if cfg[ConfigKeyRetryAttempts] != "" {
 		retryAttempts, err := strconv.Atoi(cfg[ConfigKeyRetryAttempts])
 		if err != nil {
@@ -106,8 +105,6 @@ func (c *Config) parseFields(cfg map[string]string) error {
 		}
 
 		c.RetryAttempts = retryAttempts
-	} else {
-		c.RetryAttempts = defaultRetryAttempts
 	}
 
 	return nil
