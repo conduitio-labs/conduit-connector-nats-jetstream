@@ -26,6 +26,7 @@ import (
 const (
 	// defaultBatchSize is the default batch size,
 	// it's equal to 1 which means that each message will be published synchronously.
+	// Otherwise messages will be published asynchronously.
 	defaultBatchSize = 1
 	// defaultRetryWait is the default retry wait time when ErrNoResponders is encountered.
 	defaultRetryWait = time.Second * 5
