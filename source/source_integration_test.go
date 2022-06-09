@@ -25,7 +25,6 @@ import (
 	"github.com/conduitio-labs/conduit-connector-nats/config"
 	"github.com/conduitio-labs/conduit-connector-nats/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	"github.com/nats-io/nats.go"
 )
 
 func TestSource_Open(t *testing.T) {
@@ -341,15 +340,7 @@ func createTestJetStream(t *testing.T, stream, subject string) (sdk.Source, erro
 		return nil, fmt.Errorf("get test connection: %v", err)
 	}
 
-	js, err := testConn.JetStream()
-	if err != nil {
-		return nil, fmt.Errorf("create jetstream context: %v", err)
-	}
-
-	_, err = js.AddStream(&nats.StreamConfig{
-		Name:     stream,
-		Subjects: []string{subject},
-	})
+	err = test.CreateTestStream(testConn, stream, []string{subject})
 	if err != nil {
 		return nil, fmt.Errorf("add stream: %v", err)
 	}

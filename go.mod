@@ -6,6 +6,7 @@ require (
 	github.com/conduitio/conduit-connector-sdk v0.2.1-0.20220530152250-733149cddc0b
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/google/uuid v1.1.2
+	github.com/matryer/is v1.4.0
 	github.com/nats-io/nats.go v1.16.0
 	go.uber.org/multierr v1.8.0
 )
@@ -21,7 +22,6 @@ require (
 	github.com/hashicorp/yamux v0.0.0-20180604194846-3520598351bb // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/matryer/is v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mitchellh/go-testing-interface v1.0.0 // indirect

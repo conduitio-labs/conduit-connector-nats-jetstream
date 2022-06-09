@@ -22,7 +22,7 @@ import (
 )
 
 // Writer implements a PubSub writer.
-// It writes messages synchronously. It doesn't support buffering and flushing.
+// It writes messages synchronously. It doesn't support batching/async writing.
 type Writer struct {
 	conn    *nats.Conn
 	subject string
@@ -48,8 +48,8 @@ func (w *Writer) Write(ctx context.Context, record sdk.Record) error {
 }
 
 // WriteAsync is not implemented for the PubSub Writer.
-func (w *Writer) WriteAsync(ctx context.Context, record sdk.Record, ackFunc sdk.AckFunc) error {
-	return sdk.ErrUnimplemented
+func (w *Writer) WriteAsync(ctx context.Context, record sdk.Record, ackFunc sdk.AckFunc) (batchIsFull bool, err error) {
+	return false, sdk.ErrUnimplemented
 }
 
 // Flush is not implemented for the PubSub Writer.
