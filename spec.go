@@ -16,6 +16,7 @@ package nats
 
 import (
 	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/conduitio-labs/conduit-connector-nats/destination"
 	"github.com/conduitio-labs/conduit-connector-nats/source"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
@@ -152,6 +153,23 @@ func Specification() sdk.Specification {
 				Default:     "",
 				Required:    false,
 				Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",
+			},
+			destination.ConfigKeyBatchSize: {
+				Default:  "1",
+				Required: false,
+				Description: "Defines a message batch size in JetStream mode. " +
+					"If it's equal to 1 messages will be sent synchronously. " +
+					"If it's greater than 1 messages will be sent asynchronously (batched).",
+			},
+			destination.ConfigKeyRetryWait: {
+				Default:     "5s",
+				Required:    false,
+				Description: "Sets the timeout to wait for a message to be resent, if send fails.",
+			},
+			destination.ConfigKeyRetryAttempts: {
+				Default:     "3",
+				Required:    false,
+				Description: "Sets a numbers of attempts to send a message, if send fails.",
 			},
 		},
 	}
