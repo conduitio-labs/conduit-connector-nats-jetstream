@@ -39,10 +39,13 @@ func (d driver) GenerateRecord(t *testing.T) sdk.Record {
 	return sdk.Record{
 		Position: nil,
 		Metadata: nil,
-		Payload:  sdk.RawData([]byte(fmt.Sprintf(`"id":%d,"name":"%s"`, id, gofakeit.FirstName()))),
+		Payload: sdk.RawData([]byte(
+			fmt.Sprintf(`"id":%d,"name":"%s"`, id, gofakeit.FirstName()),
+		)),
 	}
 }
 
+//nolint:paralleltest // we don't need the paralleltest here
 func TestAcceptance(t *testing.T) {
 	cfg := map[string]string{
 		config.ConfigKeyURLs: test.TestURL,
@@ -55,22 +58,9 @@ func TestAcceptance(t *testing.T) {
 				Connector:         Connector,
 				SourceConfig:      cfg,
 				DestinationConfig: cfg,
-				BeforeTest: func(t *testing.T) {
-					is := is.New(t)
-
-					conn, err := test.GetTestConnection()
-					is.NoErr(err)
-
-					streamName := strings.ReplaceAll(uuid.New().String(), "-", "")
-					subject := t.Name() + uuid.New().String()
-
-					err = test.CreateTestStream(conn, streamName, []string{subject})
-					is.NoErr(err)
-
-					cfg[source.ConfigKeyStreamName] = streamName
-					cfg[config.ConfigKeySubject] = subject
-				},
+				BeforeTest:        beforeTest(t, cfg),
 				GoleakOptions: []goleak.Option{
+					// nats.go spawns a separate goroutine to process flush requests
 					goleak.IgnoreTopFunction("github.com/nats-io/nats%2ego.(*Conn).flusher"),
 					goleak.IgnoreTopFunction("sync.runtime_notifyListWait"),
 					goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"),
@@ -78,4 +68,23 @@ func TestAcceptance(t *testing.T) {
 			},
 		},
 	})
+}
+
+// beforeTest creates new stream before each test.
+func beforeTest(t *testing.T, cfg map[string]string) func(t *testing.T) {
+	return func(t *testing.T) {
+		is := is.New(t)
+
+		conn, err := test.GetTestConnection()
+		is.NoErr(err)
+
+		streamName := strings.ReplaceAll(uuid.New().String(), "-", "")
+		subject := t.Name() + uuid.New().String()
+
+		err = test.CreateTestStream(conn, streamName, []string{subject})
+		is.NoErr(err)
+
+		cfg[source.ConfigKeyStreamName] = streamName
+		cfg[config.ConfigKeySubject] = subject
+	}
 }
