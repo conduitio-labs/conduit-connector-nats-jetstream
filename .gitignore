@@ -4,3 +4,6 @@
 
 # binary
 conduit-connector-nats
+
+# testing stuff
+*.rest
