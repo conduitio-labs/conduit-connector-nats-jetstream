@@ -1,4 +1,4 @@
-# Conduit Connector NATS
+# Conduit Connector NATS JetStream
 
 ### General
 
