@@ -1,4 +1,4 @@
-module github.com/conduitio-labs/conduit-connector-nats
+module github.com/conduitio-labs/conduit-connector-nats-jetstream
 
 go 1.18
 

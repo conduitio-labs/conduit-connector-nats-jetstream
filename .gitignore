@@ -3,4 +3,4 @@
 .vscode
 
 # binary
-conduit-connector-nats
+conduit-connector-nats-jetstream

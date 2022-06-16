@@ -1,7 +1,7 @@
 .PHONY: build test lint
 
 build:
-	go build -o conduit-connector-nats cmd/nats/main.go
+	go build -o conduit-connector-nats-jetstream cmd/nats/main.go
 
 test:
 	docker-compose -f test/docker-compose.yml up --quiet-pull -d

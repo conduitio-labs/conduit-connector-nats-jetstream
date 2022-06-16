@@ -19,7 +19,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/nats-io/nats.go"
 )
 
@@ -42,7 +42,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyStreamName:     "SuperStream",
 				},
 			},
@@ -50,7 +49,6 @@ func TestParse(t *testing.T) {
 				Config: config.Config{
 					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 					Subject: "foo",
-					Mode:    "jetstream",
 				},
 				StreamName:    "SuperStream",
 				BufferSize:    defaultBufferSize,
@@ -65,7 +63,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 				},
 			},
 			want:    Config{},
@@ -77,7 +74,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyStreamName:     "sup3r@stream!\\!ame",
 				},
 			},
@@ -90,7 +86,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyStreamName:     "superLongStreamNameWithALotOfsymbolsWithinIt",
 				},
 			},
@@ -103,7 +98,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyStreamName:     "stream",
 				},
 			},
@@ -111,7 +105,6 @@ func TestParse(t *testing.T) {
 				Config: config.Config{
 					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 					Subject: "foo",
-					Mode:    "jetstream",
 				},
 				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
@@ -126,16 +119,16 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 					ConfigKeyBufferSize:     "128",
+					ConfigKeyStreamName:     "stream",
 				},
 			},
 			want: Config{
 				Config: config.Config{
 					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 					Subject: "foo",
-					Mode:    "pubsub",
 				},
+				StreamName:    "stream",
 				BufferSize:    128,
 				DeliverPolicy: defaultDeliverPolicy,
 				AckPolicy:     defaultAckPolicy,
@@ -148,15 +141,15 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
+					ConfigKeyStreamName:     "stream",
 				},
 			},
 			want: Config{
 				Config: config.Config{
 					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 					Subject: "foo",
-					Mode:    "pubsub",
 				},
+				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
 				DeliverPolicy: defaultDeliverPolicy,
 				AckPolicy:     defaultAckPolicy,
@@ -169,7 +162,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 					ConfigKeyBufferSize:     "8",
 				},
 			},
@@ -182,7 +174,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 					ConfigKeyBufferSize:     "what",
 				},
 			},
@@ -195,16 +186,16 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 					ConfigKeyAckPolicy:      "all",
+					ConfigKeyStreamName:     "stream",
 				},
 			},
 			want: Config{
 				Config: config.Config{
 					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 					Subject: "foo",
-					Mode:    "pubsub",
 				},
+				StreamName: "stream",
 				BufferSize: defaultBufferSize,
 				AckPolicy:  nats.AckAllPolicy,
 			},
@@ -216,16 +207,16 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 					ConfigKeyAckPolicy:      "none",
+					ConfigKeyStreamName:     "stream",
 				},
 			},
 			want: Config{
 				Config: config.Config{
 					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 					Subject: "foo",
-					Mode:    "pubsub",
 				},
+				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
 				DeliverPolicy: defaultDeliverPolicy,
 				AckPolicy:     nats.AckNonePolicy,
@@ -238,7 +229,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 					ConfigKeyAckPolicy:      "wrong",
 				},
 			},
@@ -251,7 +241,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyStreamName:     "mystream",
 					ConfigKeyDeliverPolicy:  "new",
 					ConfigKeyAckPolicy:      "explicit",
@@ -261,7 +250,6 @@ func TestParse(t *testing.T) {
 				Config: config.Config{
 					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 					Subject: "foo",
-					Mode:    "jetstream",
 				},
 				StreamName:    "mystream",
 				BufferSize:    defaultBufferSize,
@@ -276,7 +264,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 					ConfigKeyDeliverPolicy:  "wrong",
 					ConfigKeyAckPolicy:      "explicit",
 				},
@@ -290,16 +277,16 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 					ConfigKeyDurable:        "my_super_durable",
+					ConfigKeyStreamName:     "stream",
 				},
 			},
 			want: Config{
 				Config: config.Config{
 					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 					Subject: "foo",
-					Mode:    "pubsub",
 				},
+				StreamName:    "stream",
 				Durable:       "my_super_durable",
 				BufferSize:    defaultBufferSize,
 				DeliverPolicy: nats.DeliverAllPolicy,

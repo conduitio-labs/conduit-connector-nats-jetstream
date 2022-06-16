@@ -20,8 +20,8 @@ import (
 
 	"strconv"
 
-	"github.com/conduitio-labs/conduit-connector-nats/config"
-	"github.com/conduitio-labs/conduit-connector-nats/validator"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/validator"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 )
@@ -59,10 +59,10 @@ type Config struct {
 	BufferSize int `key:"bufferSize" validate:"omitempty,min=64"`
 	// For more detailed naming conventions see
 	// https://docs.nats.io/running-a-nats-service/nats_admin/jetstream_admin/naming.
-	StreamName string `key:"streamName" validate:"required_if=Mode jetstream,omitempty,alphanum,max=32"`
+	StreamName string `key:"streamName" validate:"required,alphanum,max=32"`
 	// Durable is the name of the Consumer, if set will make a consumer durable,
 	// allowing resuming consumption where left off.
-	Durable string `key:"durable" validate:"required_if=Mode jetstream,omitempty"`
+	Durable string `key:"durable" validate:"required"`
 	// DeliverPolicy defines where in the stream the connector should start receiving messages.
 	DeliverPolicy nats.DeliverPolicy `key:"deliverPolicy" validate:"oneof=0 2"`
 	// AckPolicy defines how messages should be acknowledged.
@@ -154,10 +154,8 @@ func (c *Config) setDefaults() {
 		c.BufferSize = defaultBufferSize
 	}
 
-	if c.Mode == config.JetStreamConsumeMode {
-		if c.Durable == "" {
-			c.Durable = c.generateDurableName()
-		}
+	if c.Durable == "" {
+		c.Durable = c.generateDurableName()
 	}
 }
 

@@ -19,9 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/conduitio-labs/conduit-connector-nats/config"
-	"github.com/conduitio-labs/conduit-connector-nats/source/jetstream"
-	"github.com/conduitio-labs/conduit-connector-nats/source/pubsub"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source/jetstream"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
@@ -70,34 +68,18 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
 
-	switch s.config.Mode {
-	case config.PubSubConsumeMode:
-		s.iterator, err = pubsub.NewIterator(ctx, pubsub.IteratorParams{
-			Conn:       conn,
-			BufferSize: s.config.BufferSize,
-			Subject:    s.config.Subject,
-		})
-		if err != nil {
-			return fmt.Errorf("init pubsub iterator: %w", err)
-		}
-
-	case config.JetStreamConsumeMode:
-		s.iterator, err = jetstream.NewIterator(ctx, jetstream.IteratorParams{
-			Conn:          conn,
-			BufferSize:    s.config.BufferSize,
-			Durable:       s.config.Durable,
-			Stream:        s.config.StreamName,
-			Subject:       s.config.Subject,
-			SDKPosition:   position,
-			DeliverPolicy: s.config.DeliverPolicy,
-			AckPolicy:     s.config.AckPolicy,
-		})
-		if err != nil {
-			return fmt.Errorf("init jetstream iterator: %w", err)
-		}
-
-	default:
-		return fmt.Errorf("unknown communication mode %q", s.config.Mode)
+	s.iterator, err = jetstream.NewIterator(ctx, jetstream.IteratorParams{
+		Conn:          conn,
+		BufferSize:    s.config.BufferSize,
+		Durable:       s.config.Durable,
+		Stream:        s.config.StreamName,
+		Subject:       s.config.Subject,
+		SDKPosition:   position,
+		DeliverPolicy: s.config.DeliverPolicy,
+		AckPolicy:     s.config.AckPolicy,
+	})
+	if err != nil {
+		return fmt.Errorf("init jetstream iterator: %w", err)
 	}
 
 	return nil

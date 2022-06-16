@@ -15,8 +15,8 @@
 package nats
 
 import (
-	"github.com/conduitio-labs/conduit-connector-nats/config"
-	"github.com/conduitio-labs/conduit-connector-nats/source"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
@@ -26,9 +26,9 @@ type Spec struct{}
 func Specification() sdk.Specification {
 	return sdk.Specification{
 		Name:    "nats",
-		Summary: "A NATS source and destination plugin for Conduit, written in Go.",
-		Description: "The NATS connector is one of Conduit plugins. " +
-			"It provides both, a source and a destination NATS connector.",
+		Summary: "A NATS JetStream source and destination plugin for Conduit, written in Go.",
+		Description: "The NATS JetStream connector is one of Conduit plugins. " +
+			"It provides both, a source and a destination NATS JetStream connector.",
 		Version: "v0.1.0",
 		Author:  "Meroxa, Inc.",
 		SourceParams: map[string]sdk.Parameter{
@@ -41,11 +41,6 @@ func Specification() sdk.Specification {
 				Default:     "",
 				Required:    true,
 				Description: "A name of a subject from which or to which the connector should read/write.",
-			},
-			config.ConfigKeyMode: {
-				Default:     "",
-				Required:    true,
-				Description: "A communication mode to be used, must be either pubsub or jetstream.",
 			},
 			config.ConfigKeyConnectionName: {
 				Default:     "conduit-connection-<uuid>",
