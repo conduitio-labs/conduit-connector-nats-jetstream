@@ -37,6 +37,11 @@ func Specification() sdk.Specification {
 				Required:    true,
 				Description: "The connection URLs pointed to NATS instances.",
 			},
+			source.ConfigKeyStreamName: {
+				Default:     "",
+				Required:    true,
+				Description: "A stream name.",
+			},
 			config.ConfigKeySubject: {
 				Default:     "",
 				Required:    true,
@@ -78,11 +83,6 @@ func Specification() sdk.Specification {
 				Default:     "1024",
 				Required:    false,
 				Description: "A buffer size for consumed messages.",
-			},
-			source.ConfigKeyStreamName: {
-				Default:     "",
-				Required:    false,
-				Description: "A stream name. Required if the connector in JetStream mode.",
 			},
 			source.ConfigKeyDurable: {
 				Default:     "conduit-<uuid>",
