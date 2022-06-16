@@ -3,7 +3,7 @@
 .vscode
 
 # binary
-conduit-connector-nats
+conduit-connector-nats-jetstream
 
 # testing stuff
 *.rest

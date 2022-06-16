@@ -17,7 +17,7 @@ package common
 import (
 	"fmt"
 
-	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/nats-io/nats.go"
 )
 

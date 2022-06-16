@@ -15,7 +15,7 @@
 package main
 
 import (
-	nats "github.com/conduitio-labs/conduit-connector-nats"
+	nats "github.com/conduitio-labs/conduit-connector-nats-jetstream"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 

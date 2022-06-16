@@ -2,7 +2,7 @@
 
 ### General
 
-The [NATS](https://nats.io/) connector is one of [Conduit](https://github.com/ConduitIO/conduit) plugins. It provides both, a source and a destination NATS connector.
+The [NATS](https://nats.io/) JetStream connector is one of [Conduit](https://github.com/ConduitIO/conduit) plugins. It provides both, a source and a destination NATS JetStream connector.
 
 ### Prerequisites
 
@@ -18,19 +18,13 @@ Run `make`.
 
 Run `make test` to run all the unit and integration tests, which require Docker and Docker Compose to be installed and running. The command will handle starting and stopping docker containers for you.
 
-### NATS
+## Source
 
 ### Connection and authentication
 
-The NATS connector connects to a NATS server or a cluster with the required parameters `urls`, `subject` and `mode`. If your NATS server has a configured authentication you can pass an authentication details in the connection URL. For example, for a token authentication the url will look like: `nats://mytoken@127.0.0.1:4222`, and for a username/password authentication: `nats://username:password@127.0.0.1:4222`. But if your server is using [NKey](https://docs.nats.io/using-nats/developer/connecting/nkey) or [Credentials file](https://docs.nats.io/using-nats/developer/connecting/creds) for authentication you must configure them via seperate [configuration](#configuration) parameters.
+The NATS JetStream connector connects to a NATS server or a cluster with the required parameters `urls`, `subject` and `mode`. If your NATS server has a configured authentication you can pass an authentication details in the connection URL. For example, for a token authentication the url will look like: `nats://mytoken@127.0.0.1:4222`, and for a username/password authentication: `nats://username:password@127.0.0.1:4222`. But if your server is using [NKey](https://docs.nats.io/using-nats/developer/connecting/nkey) or [Credentials file](https://docs.nats.io/using-nats/developer/connecting/creds) for authentication you must configure them via seperate [configuration](#configuration) parameters.
 
-## Source
-
-### PubSub
-
-The connector listening on a subject receives messages published on that subject. If the connector is not actively listening on the subject, the message is not received. The connector can use the [wildcard](https://docs.nats.io/nats-concepts/subjects#wildcards) tokens such as `*` and `>` to match a single token or to match the tail of a subject.
-
-### JetStream
+### Receiving messages
 
 The connector creates a durable NATS consumer which means it's able to read messages that were written to a NATS stream before the connector was created, unless configured otherwise. The `deliverPolicy` configuration parameter allows you to control this behavior.
 
@@ -41,11 +35,7 @@ The connector allows you to configure a size of a pending message buffer. If you
 
 ### Position handling
 
-The connector goes through two modes.
-
-_PubSub mode_: The position during this mode is a random binary marshaled UUIDv4.
-
-_JetStream mode_: The position during this mode contains the following fields: `durable` (a durable consumer name), `stream` (a name of a stream the consumer reading from), `subject`, `timestamp` (timestamp of a message or the time the message was read by the connector) and `opt_seq` (the position of a message in a stream).
+The position during this mode contains the following fields: `durable` (a durable consumer name), `stream` (a name of a stream the consumer reading from), `subject`, `timestamp` (timestamp of a message or the time the message was read by the connector) and `opt_seq` (the position of a message in a stream).
 
 ### Configuration
 
@@ -55,7 +45,6 @@ The config passed to Configure can contain the following fields.
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------- |
 | `urls`                    | A list of connection URLs joined by comma. Must be a valid URLs.<br />Examples:<br />`nats://127.0.0.1:1222`<br />`nats://127.0.0.1:1222,nats://127.0.0.1:1223`<br />`nats://myname:password@127.0.0.1:4222`<br />`nats://mytoken@127.0.0.1:4222`                                                                                                                                                                                                                                                                                                                                                                | **true** |                                    |
 | `subject`                 | A name of a subject from which or to which the connector should read write.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | **true** |                                    |
-| `mode`                    | A communication mode to be used, must be either pubsub or jetstream                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | **true** |                                    |
 | `connectionName`          | Optional connection name which will come in handy when it comes to monitoring                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | false    | `conduit-connection-<random_uuid>` |
 | `nkeyPath`                | A path pointed to a [NKey](https://docs.nats.io/using-nats/developer/connecting/nkey) pair. Must be a valid file path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | false    |                                    |
 | `credentialsFilePath`     | A path pointed to a [credentials file](https://docs.nats.io/using-nats/developer/connecting/creds). Must be a valid file path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | false    |                                    |
@@ -70,16 +59,9 @@ The config passed to Configure can contain the following fields.
 
 ## Destination
 
-### PubSub
+### Sending messages
 
-The connector sends message synchronously, one by one.
-
-### JetStream
-
-You have two options for how to send messages.
-
-- _Synchronously_ - in the same way as in the case of PubSub mode. Messages are sent synchronously. To use this mode, you need to set the `batchSize` config field to `1`.
-- _Asynchronously_ - if you set the `batchSize` field to something greater than `1`, you'll be able to take full advantage of asynchronous (batched) writes. The connector will accumulate messages until the number of messages in the buffer reaches the value of the `batchSize` field.
+If you set the `batchSize` field to something greater than `1`, you'll be able to take full advantage of asynchronous (batched) writes. The connector will accumulate messages until the number of messages in the buffer reaches the value of the `batchSize` field.
 
 ### Configuration
 
@@ -89,13 +71,12 @@ The config passed to Configure can contain the following fields.
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ---------------------------------- |
 | `urls`                    | A list of connection URLs joined by comma. Must be a valid URLs.<br />Examples:<br />`nats://127.0.0.1:1222`<br />`nats://127.0.0.1:1222,nats://127.0.0.1:1223`<br />`nats://myname:password@127.0.0.1:4222`<br />`nats://mytoken@127.0.0.1:4222`                                                                                                                                                  | **true** |                                    |
 | `subject`                 | A name of a subject from which or to which the connector should read write.                                                                                                                                                                                                                                                                                                                        | **true** |                                    |
-| `mode`                    | A communication mode to be used, must be either pubsub or jetstream                                                                                                                                                                                                                                                                                                                                | **true** |                                    |
 | `connectionName`          | Optional connection name which will come in handy when it comes to monitoring                                                                                                                                                                                                                                                                                                                      | false    | `conduit-connection-<random_uuid>` |
 | `nkeyPath`                | A path pointed to a [NKey](https://docs.nats.io/using-nats/developer/connecting/nkey) pair. Must be a valid file path                                                                                                                                                                                                                                                                              | false    |                                    |
 | `credentialsFilePath`     | A path pointed to a [credentials file](https://docs.nats.io/using-nats/developer/connecting/creds). Must be a valid file path                                                                                                                                                                                                                                                                      | false    |                                    |
 | `tlsClientCertPath`       | A path pointed to a TLS client certificate, must be present if tlsClientPrivateKeyPath field is also present. Must be a valid file path                                                                                                                                                                                                                                                            | false    |                                    |
 | `tlsClientPrivateKeyPath` | A path pointed to a TLS client private key, must be present if tlsClientCertPath field is also present. Must be a valid file path                                                                                                                                                                                                                                                                  | false    |                                    |
 | `tlsRootCACertPath`       | A path pointed to a TLS root certificate, provide if you want to verify server’s identity. Must be a valid file path                                                                                                                                                                                                                                                                               | false    |                                    |
-| `batchSize`               | Defines a message batch size. It make sense to set this value only with jetstream mode.<br /><br />- If the value is greater than `1` jetstream will asynchronously write messages.<br /><br />- If it’s equal to `1` jetstream will synchronously write messages, one by one.<br /><br />Minimum allowed value is 1.<br/>For pubsub mode this value doesn’t matter, pubsub always writes synchronously. | false    | `1`                                |
+| `batchSize`               | Defines a message batch size. It make sense to set this value only with jetstream mode.<br /><br />- If the value is greater than `1` jetstream will asynchronously write messages.<br /><br />- If it’s equal to `1` jetstream will synchronously write messages, one by one.<br /><br />Minimum allowed value is 1. | false    | `1`                                |
 | `retryWait`               | Sets the timeout to wait for a message to be resent, if send fails.                                                                                                                                                                                                                                                                                                                                | false    | `5s`                               |
 | `retryAttempts`           | Sets a numbers of attempts to send a message, if send fails.                                                                                                                                                                                                                                                                                                                                       | false    | `3`                                |

@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/conduitio-labs/conduit-connector-nats/config"
-	"github.com/conduitio-labs/conduit-connector-nats/validator"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/validator"
 )
 
 const (

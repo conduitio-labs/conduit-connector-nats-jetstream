@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 )
 
 func TestParse(t *testing.T) {
@@ -40,14 +40,12 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://localhost:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 				},
 			},
 			want: Config{
 				Config: config.Config{
 					URLs:    []string{"nats://localhost:4222"},
 					Subject: "foo",
-					Mode:    "jetstream",
 				},
 				BatchSize:     defaultBatchSize,
 				RetryWait:     defaultRetryWait,
@@ -61,7 +59,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://localhost:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyBatchSize:      "300",
 				},
 			},
@@ -69,7 +66,6 @@ func TestParse(t *testing.T) {
 				Config: config.Config{
 					URLs:    []string{"nats://localhost:4222"},
 					Subject: "foo",
-					Mode:    "jetstream",
 				},
 				BatchSize:     300,
 				RetryWait:     defaultRetryWait,
@@ -83,7 +79,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://localhost:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyRetryWait:      "3s",
 				},
 			},
@@ -91,7 +86,6 @@ func TestParse(t *testing.T) {
 				Config: config.Config{
 					URLs:    []string{"nats://localhost:4222"},
 					Subject: "foo",
-					Mode:    "jetstream",
 				},
 				BatchSize:     defaultBatchSize,
 				RetryWait:     time.Second * 3,
@@ -105,7 +99,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://localhost:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyRetryAttempts:  "5",
 				},
 			},
@@ -113,7 +106,6 @@ func TestParse(t *testing.T) {
 				Config: config.Config{
 					URLs:    []string{"nats://localhost:4222"},
 					Subject: "foo",
-					Mode:    "jetstream",
 				},
 				BatchSize:     defaultBatchSize,
 				RetryWait:     defaultRetryWait,
@@ -127,7 +119,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://localhost:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyBatchSize:      "wrong",
 				},
 			},
@@ -140,7 +131,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://localhost:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyBatchSize:      "0",
 				},
 			},
@@ -153,7 +143,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://localhost:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyRetryWait:      "wrong",
 				},
 			},
@@ -166,7 +155,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://localhost:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "jetstream",
 					ConfigKeyRetryAttempts:  "wrong",
 				},
 			},

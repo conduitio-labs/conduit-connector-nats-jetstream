@@ -20,10 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/conduitio-labs/conduit-connector-nats/common"
-	"github.com/conduitio-labs/conduit-connector-nats/config"
-	"github.com/conduitio-labs/conduit-connector-nats/destination/jetstream"
-	"github.com/conduitio-labs/conduit-connector-nats/destination/pubsub"
+	common "github.com/conduitio-labs/conduit-connector-nats-jetstream/common"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/destination/jetstream"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
@@ -73,30 +71,15 @@ func (d *Destination) Open(ctx context.Context) error {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
 
-	switch d.config.Mode {
-	case config.PubSubConsumeMode:
-		d.writer, err = pubsub.NewWriter(ctx, pubsub.WriterParams{
-			Conn:    conn,
-			Subject: d.config.Subject,
-		})
-		if err != nil {
-			return fmt.Errorf("init pubsub writer: %w", err)
-		}
-
-	case config.JetStreamConsumeMode:
-		d.writer, err = jetstream.NewWriter(ctx, jetstream.WriterParams{
-			Conn:          conn,
-			Subject:       d.config.Subject,
-			BatchSize:     d.config.BatchSize,
-			RetryWait:     d.config.RetryWait,
-			RetryAttempts: d.config.RetryAttempts,
-		})
-		if err != nil {
-			return fmt.Errorf("init jetstream writer: %w", err)
-		}
-
-	default:
-		return fmt.Errorf("unknown communication mode %q", d.config.Mode)
+	d.writer, err = jetstream.NewWriter(ctx, jetstream.WriterParams{
+		Conn:          conn,
+		Subject:       d.config.Subject,
+		BatchSize:     d.config.BatchSize,
+		RetryWait:     d.config.RetryWait,
+		RetryAttempts: d.config.RetryAttempts,
+	})
+	if err != nil {
+		return fmt.Errorf("init jetstream writer: %w", err)
 	}
 
 	return nil
@@ -108,7 +91,6 @@ func (d *Destination) Write(ctx context.Context, record sdk.Record) error {
 }
 
 // WriteAsync asynchronously writes a record into a Destination.
-// Currently only JetStream mode supports it, PubSub will raise a sdk.ErrUnimplemented error.
 // JetStream supports it when the batchSize is greater than 1, otherwise the method will fallback to Write.
 // When a batch is full the method calls Flush.
 func (d *Destination) WriteAsync(ctx context.Context, record sdk.Record, ackFunc sdk.AckFunc) error {

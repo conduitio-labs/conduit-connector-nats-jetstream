@@ -18,7 +18,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/conduitio-labs/conduit-connector-nats/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 )
 
 func TestDestination_Configure(t *testing.T) {
@@ -41,7 +41,6 @@ func TestDestination_Configure(t *testing.T) {
 				cfg: map[string]string{
 					config.ConfigKeyURLs:    "nats://127.0.0.1:4222",
 					config.ConfigKeySubject: "foo",
-					config.ConfigKeyMode:    "pubsub",
 				},
 			},
 			wantErr: false,

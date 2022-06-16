@@ -18,8 +18,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/conduitio-labs/conduit-connector-nats/config"
-	"github.com/conduitio-labs/conduit-connector-nats/test"
+	config "github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	test "github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
 )
@@ -37,27 +37,6 @@ func TestDestination_Open(t *testing.T) {
 	})
 	is.NoErr(err)
 
-	t.Run("success, pubsub", func(t *testing.T) {
-		t.Parallel()
-
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination",
-			config.ConfigKeyMode:    string(config.PubSubConsumeMode),
-		})
-		is.NoErr(err)
-
-		err = destination.Open(context.Background())
-		is.NoErr(err)
-
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
-	})
-
 	t.Run("success, jetstream", func(t *testing.T) {
 		t.Parallel()
 
@@ -68,36 +47,11 @@ func TestDestination_Open(t *testing.T) {
 		err := destination.Configure(context.Background(), map[string]string{
 			config.ConfigKeyURLs:    test.TestURL,
 			config.ConfigKeySubject: "foo_destination",
-			config.ConfigKeyMode:    string(config.JetStreamConsumeMode),
 		})
 		is.NoErr(err)
 
 		err = destination.Open(context.Background())
 		is.NoErr(err)
-
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
-	})
-
-	t.Run("fail, unknown mode", func(t *testing.T) {
-		t.Parallel()
-
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination",
-			config.ConfigKeyMode:    string(config.JetStreamConsumeMode),
-		})
-		is.NoErr(err)
-
-		d := destination.(*Destination)
-		d.config.Mode = "wrong"
-
-		err = destination.Open(context.Background())
-		is.True(err != nil)
 
 		err = destination.Teardown(context.Background())
 		is.NoErr(err)
@@ -113,7 +67,6 @@ func TestDestination_Open(t *testing.T) {
 		err := destination.Configure(context.Background(), map[string]string{
 			config.ConfigKeyURLs:    "nats://localhost:6666",
 			config.ConfigKeySubject: "foo_destination",
-			config.ConfigKeyMode:    string(config.JetStreamConsumeMode),
 		})
 		is.NoErr(err)
 
@@ -134,36 +87,9 @@ func TestDestination_Write(t *testing.T) {
 	is.NoErr(err)
 
 	err = test.CreateTestStream(conn, t.Name(), []string{
-		"foo_destination_write_pubsub",
 		"foo_destination_write_jetstream",
 	})
 	is.NoErr(err)
-
-	t.Run("success, pubsub sync write, 1 message", func(t *testing.T) {
-		t.Parallel()
-
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination_write_pubsub",
-			config.ConfigKeyMode:    string(config.PubSubConsumeMode),
-		})
-		is.NoErr(err)
-
-		err = destination.Open(context.Background())
-		is.NoErr(err)
-
-		err = destination.Write(context.Background(), sdk.Record{
-			Payload: sdk.RawData([]byte("hello")),
-		})
-		is.NoErr(err)
-
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
-	})
 
 	t.Run("success, jetstream sync write, 1 message, batch size is 1", func(t *testing.T) {
 		t.Parallel()
@@ -175,7 +101,6 @@ func TestDestination_Write(t *testing.T) {
 		err := destination.Configure(context.Background(), map[string]string{
 			config.ConfigKeyURLs:    test.TestURL,
 			config.ConfigKeySubject: "foo_destination_write_jetstream",
-			config.ConfigKeyMode:    string(config.JetStreamConsumeMode),
 			ConfigKeyBatchSize:      "1",
 		})
 		is.NoErr(err)
@@ -202,7 +127,6 @@ func TestDestination_WriteAsync(t *testing.T) {
 	is.NoErr(err)
 
 	err = test.CreateTestStream(conn, t.Name(), []string{
-		"foo_destination_write_async_pubsub",
 		"foo_destination_write_async_jetstream",
 	})
 	is.NoErr(err)
@@ -217,7 +141,6 @@ func TestDestination_WriteAsync(t *testing.T) {
 		err := destination.Configure(context.Background(), map[string]string{
 			config.ConfigKeyURLs:    test.TestURL,
 			config.ConfigKeySubject: "foo_destination_write_async_jetstream",
-			config.ConfigKeyMode:    string(config.JetStreamConsumeMode),
 			ConfigKeyBatchSize:      "100",
 		})
 		is.NoErr(err)
@@ -248,7 +171,6 @@ func TestDestination_WriteAsync(t *testing.T) {
 		err := destination.Configure(context.Background(), map[string]string{
 			config.ConfigKeyURLs:    test.TestURL,
 			config.ConfigKeySubject: "foo_destination_write_async_jetstream",
-			config.ConfigKeyMode:    string(config.JetStreamConsumeMode),
 			ConfigKeyBatchSize:      "50",
 		})
 		is.NoErr(err)
@@ -279,7 +201,6 @@ func TestDestination_WriteAsync(t *testing.T) {
 		err := destination.Configure(context.Background(), map[string]string{
 			config.ConfigKeyURLs:    test.TestURL,
 			config.ConfigKeySubject: "foo_destination_write_async_jetstream",
-			config.ConfigKeyMode:    string(config.JetStreamConsumeMode),
 			ConfigKeyBatchSize:      "1",
 		})
 		is.NoErr(err)
@@ -292,34 +213,6 @@ func TestDestination_WriteAsync(t *testing.T) {
 		}
 
 		err = destination.WriteAsync(context.Background(), record, func(err error) error {
-			return err
-		})
-		is.Equal(err, sdk.ErrUnimplemented)
-
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
-	})
-
-	t.Run("fail, try to pubsub async write, expected Unimplemented error", func(t *testing.T) {
-		t.Parallel()
-
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination_write_async_pubsub",
-			config.ConfigKeyMode:    string(config.PubSubConsumeMode),
-		})
-		is.NoErr(err)
-
-		err = destination.Open(context.Background())
-		is.NoErr(err)
-
-		err = destination.WriteAsync(context.Background(), sdk.Record{
-			Payload: sdk.RawData([]byte("hello")),
-		}, func(err error) error {
 			return err
 		})
 		is.Equal(err, sdk.ErrUnimplemented)

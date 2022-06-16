@@ -20,9 +20,9 @@ import (
 	"testing"
 
 	"github.com/brianvoe/gofakeit"
-	"github.com/conduitio-labs/conduit-connector-nats/config"
-	"github.com/conduitio-labs/conduit-connector-nats/source"
-	"github.com/conduitio-labs/conduit-connector-nats/test"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
@@ -49,7 +49,6 @@ func (d driver) GenerateRecord(t *testing.T) sdk.Record {
 func TestAcceptance(t *testing.T) {
 	cfg := map[string]string{
 		config.ConfigKeyURLs: test.TestURL,
-		config.ConfigKeyMode: string(config.JetStreamConsumeMode),
 	}
 
 	sdk.AcceptanceTest(t, driver{

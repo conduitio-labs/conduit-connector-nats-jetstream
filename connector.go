@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package nats implements NATS connector for Conduit. It provides both, a source and a destination NATS connector.
+// Package nats implements NATS JetStream connector for Conduit.
+// It provides both, a source and a destination NATS JetStream connector.
 package nats
 
 import (
-	"github.com/conduitio-labs/conduit-connector-nats/destination"
-	"github.com/conduitio-labs/conduit-connector-nats/source"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/destination"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 

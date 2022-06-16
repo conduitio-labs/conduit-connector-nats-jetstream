@@ -18,32 +18,18 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/conduitio-labs/conduit-connector-nats/validator"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/validator"
 	"github.com/google/uuid"
 )
 
-// ConsumeMode represents a communication model.
-type ConsumeMode string
-
-const (
-	// PubSubConsumeMode is a Pub/Sub communication model.
-	PubSubConsumeMode ConsumeMode = "pubsub"
-	// JetStreamConsumeMode is a JetStream communication model.
-	JetStreamConsumeMode ConsumeMode = "jetstream"
-)
-
-const (
-	// DefaultConnectionNamePrefix is the default connection name prefix.
-	DefaultConnectionNamePrefix = "conduit-connection-"
-)
+// DefaultConnectionNamePrefix is the default connection name prefix.
+const DefaultConnectionNamePrefix = "conduit-connection-"
 
 const (
 	// ConfigKeyURLs is a config name for a connection URLs.
 	ConfigKeyURLs = "urls"
 	// ConfigKeySubject is a config name for a subject.
 	ConfigKeySubject = "subject"
-	// ConfigKeyMode is a config name for a mode.
-	ConfigKeyMode = "mode"
 	// ConfigKeyConnectionName is a config name for a connection name.
 	ConfigKeyConnectionName = "connectionName"
 	// ConfigKeyNKeyPath is a config name for a path pointed to a NKey pair.
@@ -59,11 +45,10 @@ const (
 )
 
 // Config contains configurable values
-// shared between source and destination NATS connector.
+// shared between source and destination NATS JetStream connector.
 type Config struct {
-	URLs    []string    `key:"urls" validate:"required,dive,url"`
-	Subject string      `key:"subject" validate:"required"`
-	Mode    ConsumeMode `key:"mode" validate:"required,oneof=pubsub jetstream"`
+	URLs    []string `key:"urls" validate:"required,dive,url"`
+	Subject string   `key:"subject" validate:"required"`
 	// ConnectionName might come in handy when it comes to monitoring and so.
 	// See https://docs.nats.io/using-nats/developer/connecting/name.
 	ConnectionName string `key:"connectionName"`
@@ -84,7 +69,6 @@ func Parse(cfg map[string]string) (Config, error) {
 	config := Config{
 		URLs:                    strings.Split(cfg[ConfigKeyURLs], ","),
 		Subject:                 cfg[ConfigKeySubject],
-		Mode:                    ConsumeMode(cfg[ConfigKeyMode]),
 		ConnectionName:          cfg[ConfigKeyConnectionName],
 		NKeyPath:                cfg[ConfigKeyNKeyPath],
 		CredentialsFilePath:     cfg[ConfigKeyCredentialsFilePath],

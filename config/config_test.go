@@ -39,13 +39,11 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					ConfigKeySubject: "foo",
-					ConfigKeyMode:    "pubsub",
 				},
 			},
 			want: Config{
 				URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
 				Subject: "foo",
-				Mode:    "pubsub",
 			},
 			wantErr: false,
 		},
@@ -55,13 +53,11 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:    "nats://127.0.0.1:1222",
 					ConfigKeySubject: "foo",
-					ConfigKeyMode:    "pubsub",
 				},
 			},
 			want: Config{
 				URLs:    []string{"nats://127.0.0.1:1222"},
 				Subject: "foo",
-				Mode:    "pubsub",
 			},
 			wantErr: false,
 		},
@@ -71,13 +67,11 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:    "nats://token:127.0.0.1:1222",
 					ConfigKeySubject: "foo",
-					ConfigKeyMode:    "pubsub",
 				},
 			},
 			want: Config{
 				URLs:    []string{"nats://token:127.0.0.1:1222"},
 				Subject: "foo",
-				Mode:    "pubsub",
 			},
 			wantErr: false,
 		},
@@ -87,13 +81,11 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:    "nats://admin:admin@127.0.0.1:1222",
 					ConfigKeySubject: "foo",
-					ConfigKeyMode:    "pubsub",
 				},
 			},
 			want: Config{
 				URLs:    []string{"nats://admin:admin@127.0.0.1:1222"},
 				Subject: "foo",
-				Mode:    "pubsub",
 			},
 			wantErr: false,
 		},
@@ -102,7 +94,6 @@ func TestParse(t *testing.T) {
 			args: args{
 				cfg: map[string]string{
 					ConfigKeyURLs: "nats://localhost:1222",
-					ConfigKeyMode: "pubsub",
 				},
 			},
 			want:    Config{},
@@ -114,35 +105,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:    "notaurl",
 					ConfigKeySubject: "foo",
-					ConfigKeyMode:    "pubsub",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
-		},
-		{
-			name: "success, mode is jetstream",
-			args: args{
-				cfg: map[string]string{
-					ConfigKeyURLs:    "nats://127.0.0.1:1222",
-					ConfigKeySubject: "foo",
-					ConfigKeyMode:    "jetstream",
-				},
-			},
-			want: Config{
-				URLs:    []string{"nats://127.0.0.1:1222"},
-				Subject: "foo",
-				Mode:    "jetstream",
-			},
-			wantErr: false,
-		},
-		{
-			name: "fail, mode is unknown",
-			args: args{
-				cfg: map[string]string{
-					ConfigKeyURLs:    "nats://127.0.0.1:1222",
-					ConfigKeySubject: "foo",
-					ConfigKeyMode:    "reply",
 				},
 			},
 			want:    Config{},
@@ -154,7 +116,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:              "nats://127.0.0.1:1222",
 					ConfigKeySubject:           "foo",
-					ConfigKeyMode:              "pubsub",
 					ConfigKeyTLSClientCertPath: "./config.go",
 				},
 			},
@@ -167,14 +128,12 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:     "nats://127.0.0.1:1222",
 					ConfigKeySubject:  "foo",
-					ConfigKeyMode:     "pubsub",
 					ConfigKeyNKeyPath: "./config.go",
 				},
 			},
 			want: Config{
 				URLs:     []string{"nats://127.0.0.1:1222"},
 				Subject:  "foo",
-				Mode:     "pubsub",
 				NKeyPath: "./config.go",
 			},
 			wantErr: false,
@@ -185,14 +144,12 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:                "nats://127.0.0.1:1222",
 					ConfigKeySubject:             "foo",
-					ConfigKeyMode:                "pubsub",
 					ConfigKeyCredentialsFilePath: "./config.go",
 				},
 			},
 			want: Config{
 				URLs:                []string{"nats://127.0.0.1:1222"},
 				Subject:             "foo",
-				Mode:                "pubsub",
 				CredentialsFilePath: "./config.go",
 			},
 			wantErr: false,
@@ -203,14 +160,12 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					ConfigKeyURLs:           "nats://127.0.0.1:1222",
 					ConfigKeySubject:        "foo",
-					ConfigKeyMode:           "pubsub",
 					ConfigKeyConnectionName: "my_super_connection",
 				},
 			},
 			want: Config{
 				URLs:           []string{"nats://127.0.0.1:1222"},
 				Subject:        "foo",
-				Mode:           "pubsub",
 				ConnectionName: "my_super_connection",
 			},
 			wantErr: false,
