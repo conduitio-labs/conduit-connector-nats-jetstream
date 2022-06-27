@@ -15,11 +15,9 @@
 package nats
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
-	"github.com/brianvoe/gofakeit"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
@@ -34,15 +32,11 @@ type driver struct {
 }
 
 func (d driver) GenerateRecord(t *testing.T) sdk.Record {
-	id := gofakeit.Int32()
+	record := d.ConfigurableAcceptanceTestDriver.GenerateRecord(t)
+	// we don't need key for NATS JetStream
+	record.Key = nil
 
-	return sdk.Record{
-		Position: nil,
-		Metadata: nil,
-		Payload: sdk.RawData([]byte(
-			fmt.Sprintf(`"id":%d,"name":"%s"`, id, gofakeit.FirstName()),
-		)),
-	}
+	return record
 }
 
 //nolint:paralleltest // we don't need the paralleltest here
