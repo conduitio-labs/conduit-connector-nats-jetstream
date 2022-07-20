@@ -53,5 +53,8 @@ func GetConnectionOptions(config config.Config) ([]nats.Option, error) {
 		opts = append(opts, nats.RootCAs(config.TLSRootCACertPath))
 	}
 
+	opts = append(opts, nats.MaxReconnects(config.MaxReconnects))
+	opts = append(opts, nats.ReconnectWait(config.ReconnectWait))
+
 	return opts, nil
 }

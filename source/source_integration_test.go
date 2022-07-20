@@ -50,7 +50,7 @@ func TestSource_Read_JetStream(t *testing.T) {
 	t.Run("success, one message", func(t *testing.T) {
 		t.Parallel()
 
-		stream, subject := "mystreamone", "foo_one"
+		stream, subject := "mystreamreadone", "foo_one"
 
 		source, err := createTestJetStream(t, stream, subject)
 		if err != nil {
@@ -140,9 +140,9 @@ func TestSource_Read_JetStream(t *testing.T) {
 func createTestJetStream(t *testing.T, stream, subject string) (sdk.Source, error) {
 	source := NewSource()
 	err := source.Configure(context.Background(), map[string]string{
-		config.ConfigKeyURLs:    test.TestURL,
-		config.ConfigKeySubject: subject,
-		ConfigKeyStreamName:     stream,
+		config.KeyURLs:      test.TestURL,
+		config.KeySubject:   subject,
+		ConfigKeyStreamName: stream,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("configure source: %v", err)

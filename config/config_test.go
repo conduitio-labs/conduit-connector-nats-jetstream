@@ -37,13 +37,15 @@ func TestParse(t *testing.T) {
 			name: "success, only required fields provided, many connection URLs",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					ConfigKeySubject: "foo",
+					KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					KeySubject: "foo",
 				},
 			},
 			want: Config{
-				URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-				Subject: "foo",
+				URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+				Subject:       "foo",
+				MaxReconnects: DefaultMaxReconnects,
+				ReconnectWait: DefaultReconnectWait,
 			},
 			wantErr: false,
 		},
@@ -51,13 +53,15 @@ func TestParse(t *testing.T) {
 			name: "success, only required fields provided, one connection URL",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:    "nats://127.0.0.1:1222",
-					ConfigKeySubject: "foo",
+					KeyURLs:    "nats://127.0.0.1:1222",
+					KeySubject: "foo",
 				},
 			},
 			want: Config{
-				URLs:    []string{"nats://127.0.0.1:1222"},
-				Subject: "foo",
+				URLs:          []string{"nats://127.0.0.1:1222"},
+				Subject:       "foo",
+				MaxReconnects: DefaultMaxReconnects,
+				ReconnectWait: DefaultReconnectWait,
 			},
 			wantErr: false,
 		},
@@ -65,13 +69,15 @@ func TestParse(t *testing.T) {
 			name: "success, url with token",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:    "nats://token:127.0.0.1:1222",
-					ConfigKeySubject: "foo",
+					KeyURLs:    "nats://token:127.0.0.1:1222",
+					KeySubject: "foo",
 				},
 			},
 			want: Config{
-				URLs:    []string{"nats://token:127.0.0.1:1222"},
-				Subject: "foo",
+				URLs:          []string{"nats://token:127.0.0.1:1222"},
+				Subject:       "foo",
+				MaxReconnects: DefaultMaxReconnects,
+				ReconnectWait: DefaultReconnectWait,
 			},
 			wantErr: false,
 		},
@@ -79,13 +85,15 @@ func TestParse(t *testing.T) {
 			name: "success, url with user/password",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:    "nats://admin:admin@127.0.0.1:1222",
-					ConfigKeySubject: "foo",
+					KeyURLs:    "nats://admin:admin@127.0.0.1:1222",
+					KeySubject: "foo",
 				},
 			},
 			want: Config{
-				URLs:    []string{"nats://admin:admin@127.0.0.1:1222"},
-				Subject: "foo",
+				URLs:          []string{"nats://admin:admin@127.0.0.1:1222"},
+				Subject:       "foo",
+				MaxReconnects: DefaultMaxReconnects,
+				ReconnectWait: DefaultReconnectWait,
 			},
 			wantErr: false,
 		},
@@ -93,7 +101,7 @@ func TestParse(t *testing.T) {
 			name: "fail, required field (subject) is missing",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs: "nats://localhost:1222",
+					KeyURLs: "nats://localhost:1222",
 				},
 			},
 			want:    Config{},
@@ -103,20 +111,20 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid url",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:    "notaurl",
-					ConfigKeySubject: "foo",
+					KeyURLs:    "notaurl",
+					KeySubject: "foo",
 				},
 			},
 			want:    Config{},
 			wantErr: true,
 		},
 		{
-			name: "fail, tlsClientCertPath without tlsClientPrivateKeyPath",
+			name: "fail, tls.clientCertPath without tls.clientPrivateKeyPath",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:              "nats://127.0.0.1:1222",
-					ConfigKeySubject:           "foo",
-					ConfigKeyTLSClientCertPath: "./config.go",
+					KeyURLs:              "nats://127.0.0.1:1222",
+					KeySubject:           "foo",
+					KeyTLSClientCertPath: "./config.go",
 				},
 			},
 			want:    Config{},
@@ -126,15 +134,17 @@ func TestParse(t *testing.T) {
 			name: "success, nkey pair",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:     "nats://127.0.0.1:1222",
-					ConfigKeySubject:  "foo",
-					ConfigKeyNKeyPath: "./config.go",
+					KeyURLs:     "nats://127.0.0.1:1222",
+					KeySubject:  "foo",
+					KeyNKeyPath: "./config.go",
 				},
 			},
 			want: Config{
-				URLs:     []string{"nats://127.0.0.1:1222"},
-				Subject:  "foo",
-				NKeyPath: "./config.go",
+				URLs:          []string{"nats://127.0.0.1:1222"},
+				Subject:       "foo",
+				NKeyPath:      "./config.go",
+				MaxReconnects: DefaultMaxReconnects,
+				ReconnectWait: DefaultReconnectWait,
 			},
 			wantErr: false,
 		},
@@ -142,15 +152,17 @@ func TestParse(t *testing.T) {
 			name: "success, credentials file",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:                "nats://127.0.0.1:1222",
-					ConfigKeySubject:             "foo",
-					ConfigKeyCredentialsFilePath: "./config.go",
+					KeyURLs:                "nats://127.0.0.1:1222",
+					KeySubject:             "foo",
+					KeyCredentialsFilePath: "./config.go",
 				},
 			},
 			want: Config{
 				URLs:                []string{"nats://127.0.0.1:1222"},
 				Subject:             "foo",
 				CredentialsFilePath: "./config.go",
+				MaxReconnects:       DefaultMaxReconnects,
+				ReconnectWait:       DefaultReconnectWait,
 			},
 			wantErr: false,
 		},
@@ -158,15 +170,17 @@ func TestParse(t *testing.T) {
 			name: "success, custom connection name",
 			args: args{
 				cfg: map[string]string{
-					ConfigKeyURLs:           "nats://127.0.0.1:1222",
-					ConfigKeySubject:        "foo",
-					ConfigKeyConnectionName: "my_super_connection",
+					KeyURLs:           "nats://127.0.0.1:1222",
+					KeySubject:        "foo",
+					KeyConnectionName: "my_super_connection",
 				},
 			},
 			want: Config{
 				URLs:           []string{"nats://127.0.0.1:1222"},
 				Subject:        "foo",
 				ConnectionName: "my_super_connection",
+				MaxReconnects:  DefaultMaxReconnects,
+				ReconnectWait:  DefaultReconnectWait,
 			},
 			wantErr: false,
 		},

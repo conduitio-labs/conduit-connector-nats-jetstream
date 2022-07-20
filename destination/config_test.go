@@ -38,14 +38,16 @@ func TestParse(t *testing.T) {
 			name: "success, all defaults",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://localhost:4222",
-					config.ConfigKeySubject: "foo",
+					config.KeyURLs:    "nats://localhost:4222",
+					config.KeySubject: "foo",
 				},
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://localhost:4222"},
-					Subject: "foo",
+					URLs:          []string{"nats://localhost:4222"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				BatchSize:     defaultBatchSize,
 				RetryWait:     defaultRetryWait,
@@ -57,15 +59,17 @@ func TestParse(t *testing.T) {
 			name: "success, custom batch size",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://localhost:4222",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyBatchSize:      "300",
+					config.KeyURLs:     "nats://localhost:4222",
+					config.KeySubject:  "foo",
+					ConfigKeyBatchSize: "300",
 				},
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://localhost:4222"},
-					Subject: "foo",
+					URLs:          []string{"nats://localhost:4222"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				BatchSize:     300,
 				RetryWait:     defaultRetryWait,
@@ -77,15 +81,17 @@ func TestParse(t *testing.T) {
 			name: "success, custom retry wait",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://localhost:4222",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyRetryWait:      "3s",
+					config.KeyURLs:     "nats://localhost:4222",
+					config.KeySubject:  "foo",
+					ConfigKeyRetryWait: "3s",
 				},
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://localhost:4222"},
-					Subject: "foo",
+					URLs:          []string{"nats://localhost:4222"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				BatchSize:     defaultBatchSize,
 				RetryWait:     time.Second * 3,
@@ -97,15 +103,17 @@ func TestParse(t *testing.T) {
 			name: "success, custom retry attempts",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://localhost:4222",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyRetryAttempts:  "5",
+					config.KeyURLs:         "nats://localhost:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "5",
 				},
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://localhost:4222"},
-					Subject: "foo",
+					URLs:          []string{"nats://localhost:4222"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				BatchSize:     defaultBatchSize,
 				RetryWait:     defaultRetryWait,
@@ -117,9 +125,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid batch size",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://localhost:4222",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyBatchSize:      "wrong",
+					config.KeyURLs:     "nats://localhost:4222",
+					config.KeySubject:  "foo",
+					ConfigKeyBatchSize: "wrong",
 				},
 			},
 			want:    Config{},
@@ -129,9 +137,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid batch size, min",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://localhost:4222",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyBatchSize:      "0",
+					config.KeyURLs:     "nats://localhost:4222",
+					config.KeySubject:  "foo",
+					ConfigKeyBatchSize: "0",
 				},
 			},
 			want:    Config{},
@@ -141,9 +149,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid retry wait",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://localhost:4222",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyRetryWait:      "wrong",
+					config.KeyURLs:     "nats://localhost:4222",
+					config.KeySubject:  "foo",
+					ConfigKeyRetryWait: "wrong",
 				},
 			},
 			want:    Config{},
@@ -153,9 +161,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid retry attempts",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://localhost:4222",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyRetryAttempts:  "wrong",
+					config.KeyURLs:         "nats://localhost:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "wrong",
 				},
 			},
 			want:    Config{},

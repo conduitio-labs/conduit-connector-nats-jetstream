@@ -42,7 +42,7 @@ func (d driver) GenerateRecord(t *testing.T) sdk.Record {
 //nolint:paralleltest // we don't need the paralleltest here
 func TestAcceptance(t *testing.T) {
 	cfg := map[string]string{
-		config.ConfigKeyURLs: test.TestURL,
+		config.KeyURLs: test.TestURL,
 	}
 
 	sdk.AcceptanceTest(t, driver{
@@ -78,6 +78,6 @@ func beforeTest(t *testing.T, cfg map[string]string) func(t *testing.T) {
 		is.NoErr(err)
 
 		cfg[source.ConfigKeyStreamName] = streamName
-		cfg[config.ConfigKeySubject] = subject
+		cfg[config.KeySubject] = subject
 	}
 }

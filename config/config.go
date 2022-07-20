@@ -16,32 +16,44 @@ package config
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/validator"
 	"github.com/google/uuid"
 )
 
-// DefaultConnectionNamePrefix is the default connection name prefix.
-const DefaultConnectionNamePrefix = "conduit-connection-"
+const (
+	// DefaultConnectionNamePrefix is the default connection name prefix.
+	DefaultConnectionNamePrefix = "conduit-connection-"
+	// DefaultMaxReconnects is the default max reconnects count.
+	DefaultMaxReconnects = 5
+	// DefaultReconnectWait is the default reconnect wait timeout.
+	DefaultReconnectWait = time.Second * 5
+)
 
 const (
-	// ConfigKeyURLs is a config name for a connection URLs.
-	ConfigKeyURLs = "urls"
-	// ConfigKeySubject is a config name for a subject.
-	ConfigKeySubject = "subject"
-	// ConfigKeyConnectionName is a config name for a connection name.
-	ConfigKeyConnectionName = "connectionName"
-	// ConfigKeyNKeyPath is a config name for a path pointed to a NKey pair.
-	ConfigKeyNKeyPath = "nkeyPath"
-	// ConfigKeyCredentialsFilePath is config name for a path pointed to a credentials file.
-	ConfigKeyCredentialsFilePath = "credentialsFilePath"
-	// ConfigKeyTLSClientCertPath is a config name for a path pointed to a TLS client certificate.
-	ConfigKeyTLSClientCertPath = "tlsClientCertPath"
-	// ConfigKeyTLSClientPrivateKeyPath is a config name for a path pointed to a TLS client private key.
-	ConfigKeyTLSClientPrivateKeyPath = "tlsClientPrivateKeyPath"
-	// ConfigKeyTLSRootCACertPath is a config name for a path pointed to a TLS root certificate.
-	ConfigKeyTLSRootCACertPath = "tlsRootCACertPath"
+	// KeyURLs is a config name for a connection URLs.
+	KeyURLs = "urls"
+	// KeySubject is a config name for a subject.
+	KeySubject = "subject"
+	// KeyConnectionName is a config name for a connection name.
+	KeyConnectionName = "connectionName"
+	// KeyNKeyPath is a config name for a path pointed to a NKey pair.
+	KeyNKeyPath = "nkeyPath"
+	// KeyCredentialsFilePath is config name for a path pointed to a credentials file.
+	KeyCredentialsFilePath = "credentialsFilePath"
+	// KeyTLSClientCertPath is a config name for a path pointed to a TLS client certificate.
+	KeyTLSClientCertPath = "tls.clientCertPath"
+	// KeyTLSClientPrivateKeyPath is a config name for a path pointed to a TLS client private key.
+	KeyTLSClientPrivateKeyPath = "tls.clientPrivateKeyPath"
+	// KeyTLSRootCACertPath is a config name for a path pointed to a TLS root certificate.
+	KeyTLSRootCACertPath = "tls.rootCACertPath"
+	// KeyMaxReconnects is a config name for a max reconnects.
+	KeyMaxReconnects = "maxReconnects"
+	// KeyReconnectWait is a config name for reconnect wait duration.
+	KeyReconnectWait = "reconnectWait"
 )
 
 // Config contains configurable values
@@ -58,26 +70,45 @@ type Config struct {
 	CredentialsFilePath string `key:"credentialsFilePath" validate:"omitempty,file"`
 	// Optional parameters for a TLS encrypted connection.
 	// For more details see https://docs.nats.io/using-nats/developer/connecting/tls.
-	TLSClientCertPath string `key:"tlsClientCertPath" validate:"required_with=TLSClientPrivateKeyPath,omitempty,file"`
+	TLSClientCertPath string `key:"tls.clientCertPath" validate:"required_with=TLSClientPrivateKeyPath,omitempty,file"`
 	//nolint:lll // "validate" tag can be pretty verbose
-	TLSClientPrivateKeyPath string `key:"tlsClientPrivateKeyPath" validate:"required_with=TLSClientCertPath,omitempty,file"`
-	TLSRootCACertPath       string `key:"tlsRootCACertPath" validate:"omitempty,file"`
+	TLSClientPrivateKeyPath string `key:"tls.clientPrivateKeyPath" validate:"required_with=TLSClientCertPath,omitempty,file"`
+	TLSRootCACertPath       string `key:"tls.rootCACertPath" validate:"omitempty,file"`
+	// MaxReconnect sets the number of reconnect attempts that will be
+	// tried before giving up. If negative, then it will never give up
+	// trying to reconnect.
+	MaxReconnects int `key:"maxReconnects"`
+	// ReconnectWait sets the time to backoff after attempting a reconnect
+	// to a server that we were already connected to previously.
+	ReconnectWait time.Duration `key:"reconnectWait"`
 }
 
 // Parse maps the incoming map to the Config and validates it.
 func Parse(cfg map[string]string) (Config, error) {
 	config := Config{
-		URLs:                    strings.Split(cfg[ConfigKeyURLs], ","),
-		Subject:                 cfg[ConfigKeySubject],
-		ConnectionName:          cfg[ConfigKeyConnectionName],
-		NKeyPath:                cfg[ConfigKeyNKeyPath],
-		CredentialsFilePath:     cfg[ConfigKeyCredentialsFilePath],
-		TLSClientCertPath:       cfg[ConfigKeyTLSClientCertPath],
-		TLSClientPrivateKeyPath: cfg[ConfigKeyTLSClientPrivateKeyPath],
-		TLSRootCACertPath:       cfg[ConfigKeyTLSRootCACertPath],
+		URLs:                    strings.Split(cfg[KeyURLs], ","),
+		Subject:                 cfg[KeySubject],
+		ConnectionName:          generateConnectionName(),
+		NKeyPath:                cfg[KeyNKeyPath],
+		CredentialsFilePath:     cfg[KeyCredentialsFilePath],
+		TLSClientCertPath:       cfg[KeyTLSClientCertPath],
+		TLSClientPrivateKeyPath: cfg[KeyTLSClientPrivateKeyPath],
+		TLSRootCACertPath:       cfg[KeyTLSRootCACertPath],
+		MaxReconnects:           DefaultMaxReconnects,
+		ReconnectWait:           DefaultReconnectWait,
 	}
 
-	config.setDefaults()
+	if connectionName, ok := cfg[KeyConnectionName]; ok {
+		config.ConnectionName = connectionName
+	}
+
+	if err := config.parseMaxReconnects(cfg[KeyMaxReconnects]); err != nil {
+		return Config{}, fmt.Errorf("parse max reconnects: %w", err)
+	}
+
+	if err := config.parseReconnectWait(cfg[KeyReconnectWait]); err != nil {
+		return Config{}, fmt.Errorf("parse reconnect wait: %w", err)
+	}
 
 	if err := validator.Validate(&config); err != nil {
 		return Config{}, fmt.Errorf("validate config: %w", err)
@@ -86,15 +117,38 @@ func Parse(cfg map[string]string) (Config, error) {
 	return config, nil
 }
 
-// setDefaults set default values for empty fields.
-func (c *Config) setDefaults() {
-	if c.ConnectionName == "" {
-		c.ConnectionName = c.generateConnectionName()
+// parseMaxReconnects parses the maxReconnects string and
+// if it's not empty set cfg.MaxReconnects to its integer representation.
+func (c *Config) parseMaxReconnects(maxReconnectsStr string) error {
+	if maxReconnectsStr != "" {
+		maxReconnects, err := strconv.Atoi(maxReconnectsStr)
+		if err != nil {
+			return fmt.Errorf("\"%s\" must be an integer", KeyMaxReconnects)
+		}
+
+		c.MaxReconnects = maxReconnects
 	}
+
+	return nil
+}
+
+// parseReconnectWait parses the reconnectWait string and
+// if it's not empty set cfg.ReconnectWait to its time.Duration representation.
+func (c *Config) parseReconnectWait(reconnectWaitStr string) error {
+	if reconnectWaitStr != "" {
+		reconnectWait, err := time.ParseDuration(reconnectWaitStr)
+		if err != nil {
+			return fmt.Errorf("\"%s\" must be a valid duration", KeyReconnectWait)
+		}
+
+		c.ReconnectWait = reconnectWait
+	}
+
+	return nil
 }
 
 // generateConnectionName generates a random connection name.
 // The connection name will be made up of the default connection name and a random UUID.
-func (c *Config) generateConnectionName() string {
+func generateConnectionName() string {
 	return DefaultConnectionNamePrefix + uuid.New().String()
 }

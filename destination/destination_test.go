@@ -39,8 +39,8 @@ func TestDestination_Configure(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:4222",
-					config.ConfigKeySubject: "foo",
+					config.KeyURLs:    "nats://127.0.0.1:4222",
+					config.KeySubject: "foo",
 				},
 			},
 			wantErr: false,
@@ -58,7 +58,7 @@ func TestDestination_Configure(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				cfg: map[string]string{
-					config.ConfigKeyURLs: "nats://127.0.0.1:4222",
+					config.KeyURLs: "nats://127.0.0.1:4222",
 				},
 			},
 			wantErr: true,

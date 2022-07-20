@@ -45,8 +45,8 @@ func TestDestination_Open(t *testing.T) {
 		destination := NewDestination()
 
 		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination",
+			config.KeyURLs:    test.TestURL,
+			config.KeySubject: "foo_destination",
 		})
 		is.NoErr(err)
 
@@ -65,8 +65,8 @@ func TestDestination_Open(t *testing.T) {
 		destination := NewDestination()
 
 		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    "nats://localhost:6666",
-			config.ConfigKeySubject: "foo_destination",
+			config.KeyURLs:    "nats://localhost:6666",
+			config.KeySubject: "foo_destination",
 		})
 		is.NoErr(err)
 
@@ -99,9 +99,9 @@ func TestDestination_Write(t *testing.T) {
 		destination := NewDestination()
 
 		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination_write_jetstream",
-			ConfigKeyBatchSize:      "1",
+			config.KeyURLs:     test.TestURL,
+			config.KeySubject:  "foo_destination_write_jetstream",
+			ConfigKeyBatchSize: "1",
 		})
 		is.NoErr(err)
 
@@ -139,9 +139,9 @@ func TestDestination_WriteAsync(t *testing.T) {
 		destination := NewDestination()
 
 		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination_write_async_jetstream",
-			ConfigKeyBatchSize:      "100",
+			config.KeyURLs:     test.TestURL,
+			config.KeySubject:  "foo_destination_write_async_jetstream",
+			ConfigKeyBatchSize: "100",
 		})
 		is.NoErr(err)
 
@@ -169,9 +169,9 @@ func TestDestination_WriteAsync(t *testing.T) {
 		destination := NewDestination()
 
 		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination_write_async_jetstream",
-			ConfigKeyBatchSize:      "50",
+			config.KeyURLs:     test.TestURL,
+			config.KeySubject:  "foo_destination_write_async_jetstream",
+			ConfigKeyBatchSize: "50",
 		})
 		is.NoErr(err)
 
@@ -199,9 +199,9 @@ func TestDestination_WriteAsync(t *testing.T) {
 		destination := NewDestination()
 
 		err := destination.Configure(context.Background(), map[string]string{
-			config.ConfigKeyURLs:    test.TestURL,
-			config.ConfigKeySubject: "foo_destination_write_async_jetstream",
-			ConfigKeyBatchSize:      "1",
+			config.KeyURLs:     test.TestURL,
+			config.KeySubject:  "foo_destination_write_async_jetstream",
+			ConfigKeyBatchSize: "1",
 		})
 		is.NoErr(err)
 
