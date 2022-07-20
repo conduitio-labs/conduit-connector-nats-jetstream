@@ -37,11 +37,11 @@ const (
 	// ConfigKeyCredentialsFilePath is config name for a path pointed to a credentials file.
 	ConfigKeyCredentialsFilePath = "credentialsFilePath"
 	// ConfigKeyTLSClientCertPath is a config name for a path pointed to a TLS client certificate.
-	ConfigKeyTLSClientCertPath = "tlsClientCertPath"
+	ConfigKeyTLSClientCertPath = "tls.clientCertPath"
 	// ConfigKeyTLSClientPrivateKeyPath is a config name for a path pointed to a TLS client private key.
-	ConfigKeyTLSClientPrivateKeyPath = "tlsClientPrivateKeyPath"
+	ConfigKeyTLSClientPrivateKeyPath = "tls.clientPrivateKeyPath"
 	// ConfigKeyTLSRootCACertPath is a config name for a path pointed to a TLS root certificate.
-	ConfigKeyTLSRootCACertPath = "tlsRootCACertPath"
+	ConfigKeyTLSRootCACertPath = "tls.rootCACertPath"
 )
 
 // Config contains configurable values
@@ -58,10 +58,10 @@ type Config struct {
 	CredentialsFilePath string `key:"credentialsFilePath" validate:"omitempty,file"`
 	// Optional parameters for a TLS encrypted connection.
 	// For more details see https://docs.nats.io/using-nats/developer/connecting/tls.
-	TLSClientCertPath string `key:"tlsClientCertPath" validate:"required_with=TLSClientPrivateKeyPath,omitempty,file"`
+	TLSClientCertPath string `key:"tls.clientCertPath" validate:"required_with=TLSClientPrivateKeyPath,omitempty,file"`
 	//nolint:lll // "validate" tag can be pretty verbose
-	TLSClientPrivateKeyPath string `key:"tlsClientPrivateKeyPath" validate:"required_with=TLSClientCertPath,omitempty,file"`
-	TLSRootCACertPath       string `key:"tlsRootCACertPath" validate:"omitempty,file"`
+	TLSClientPrivateKeyPath string `key:"tls.clientPrivateKeyPath" validate:"required_with=TLSClientCertPath,omitempty,file"`
+	TLSRootCACertPath       string `key:"tls.rootCACertPath" validate:"omitempty,file"`
 }
 
 // Parse maps the incoming map to the Config and validates it.

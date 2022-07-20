@@ -111,7 +111,7 @@ func TestParse(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "fail, tlsClientCertPath without tlsClientPrivateKeyPath",
+			name: "fail, tls.clientCertPath without tls.clientPrivateKeyPath",
 			args: args{
 				cfg: map[string]string{
 					ConfigKeyURLs:              "nats://127.0.0.1:1222",

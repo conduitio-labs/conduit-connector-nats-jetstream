@@ -66,13 +66,13 @@ func Specification() sdk.Specification {
 				Default:  "",
 				Required: false,
 				//nolint:lll // long description
-				Description: "A path pointed to a TLS client certificate, must be present if tlsClientPrivateKeyPath field is also present.",
+				Description: "A path pointed to a TLS client certificate, must be present if tls.clientPrivateKeyPath field is also present.",
 			},
 			config.ConfigKeyTLSClientPrivateKeyPath: {
 				Default:  "",
 				Required: false,
 				//nolint:lll // long description
-				Description: "A path pointed to a TLS client private key, must be present if tlsClientCertPath field is also present.",
+				Description: "A path pointed to a TLS client private key, must be present if tls.clientCertPath field is also present.",
 			},
 			config.ConfigKeyTLSRootCACertPath: {
 				Default:     "",
