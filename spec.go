@@ -32,7 +32,7 @@ func Specification() sdk.Specification {
 		Version: "v0.1.0",
 		Author:  "Meroxa, Inc.",
 		SourceParams: map[string]sdk.Parameter{
-			config.ConfigKeyURLs: {
+			config.KeyURLs: {
 				Default:     "",
 				Required:    true,
 				Description: "The connection URLs pointed to NATS instances.",
@@ -42,39 +42,39 @@ func Specification() sdk.Specification {
 				Required:    true,
 				Description: "A stream name.",
 			},
-			config.ConfigKeySubject: {
+			config.KeySubject: {
 				Default:     "",
 				Required:    true,
 				Description: "A name of a subject from which or to which the connector should read/write.",
 			},
-			config.ConfigKeyConnectionName: {
+			config.KeyConnectionName: {
 				Default:     "conduit-connection-<uuid>",
 				Required:    false,
 				Description: "Optional connection name which will come in handy when it comes to monitoring.",
 			},
-			config.ConfigKeyNKeyPath: {
+			config.KeyNKeyPath: {
 				Default:     "",
 				Required:    false,
 				Description: "A path pointed to a NKey pair.",
 			},
-			config.ConfigKeyCredentialsFilePath: {
+			config.KeyCredentialsFilePath: {
 				Default:     "",
 				Required:    false,
 				Description: "A path pointed to a credentials file.",
 			},
-			config.ConfigKeyTLSClientCertPath: {
+			config.KeyTLSClientCertPath: {
 				Default:  "",
 				Required: false,
 				//nolint:lll // long description
 				Description: "A path pointed to a TLS client certificate, must be present if tls.clientPrivateKeyPath field is also present.",
 			},
-			config.ConfigKeyTLSClientPrivateKeyPath: {
+			config.KeyTLSClientPrivateKeyPath: {
 				Default:  "",
 				Required: false,
 				//nolint:lll // long description
 				Description: "A path pointed to a TLS client private key, must be present if tls.clientCertPath field is also present.",
 			},
-			config.ConfigKeyTLSRootCACertPath: {
+			config.KeyTLSRootCACertPath: {
 				Default:     "",
 				Required:    false,
 				Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",

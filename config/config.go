@@ -26,22 +26,22 @@ import (
 const DefaultConnectionNamePrefix = "conduit-connection-"
 
 const (
-	// ConfigKeyURLs is a config name for a connection URLs.
-	ConfigKeyURLs = "urls"
-	// ConfigKeySubject is a config name for a subject.
-	ConfigKeySubject = "subject"
-	// ConfigKeyConnectionName is a config name for a connection name.
-	ConfigKeyConnectionName = "connectionName"
-	// ConfigKeyNKeyPath is a config name for a path pointed to a NKey pair.
-	ConfigKeyNKeyPath = "nkeyPath"
-	// ConfigKeyCredentialsFilePath is config name for a path pointed to a credentials file.
-	ConfigKeyCredentialsFilePath = "credentialsFilePath"
-	// ConfigKeyTLSClientCertPath is a config name for a path pointed to a TLS client certificate.
-	ConfigKeyTLSClientCertPath = "tls.clientCertPath"
-	// ConfigKeyTLSClientPrivateKeyPath is a config name for a path pointed to a TLS client private key.
-	ConfigKeyTLSClientPrivateKeyPath = "tls.clientPrivateKeyPath"
-	// ConfigKeyTLSRootCACertPath is a config name for a path pointed to a TLS root certificate.
-	ConfigKeyTLSRootCACertPath = "tls.rootCACertPath"
+	// KeyURLs is a config name for a connection URLs.
+	KeyURLs = "urls"
+	// KeySubject is a config name for a subject.
+	KeySubject = "subject"
+	// KeyConnectionName is a config name for a connection name.
+	KeyConnectionName = "connectionName"
+	// KeyNKeyPath is a config name for a path pointed to a NKey pair.
+	KeyNKeyPath = "nkeyPath"
+	// KeyCredentialsFilePath is config name for a path pointed to a credentials file.
+	KeyCredentialsFilePath = "credentialsFilePath"
+	// KeyTLSClientCertPath is a config name for a path pointed to a TLS client certificate.
+	KeyTLSClientCertPath = "tls.clientCertPath"
+	// KeyTLSClientPrivateKeyPath is a config name for a path pointed to a TLS client private key.
+	KeyTLSClientPrivateKeyPath = "tls.clientPrivateKeyPath"
+	// KeyTLSRootCACertPath is a config name for a path pointed to a TLS root certificate.
+	KeyTLSRootCACertPath = "tls.rootCACertPath"
 )
 
 // Config contains configurable values
@@ -67,14 +67,14 @@ type Config struct {
 // Parse maps the incoming map to the Config and validates it.
 func Parse(cfg map[string]string) (Config, error) {
 	config := Config{
-		URLs:                    strings.Split(cfg[ConfigKeyURLs], ","),
-		Subject:                 cfg[ConfigKeySubject],
-		ConnectionName:          cfg[ConfigKeyConnectionName],
-		NKeyPath:                cfg[ConfigKeyNKeyPath],
-		CredentialsFilePath:     cfg[ConfigKeyCredentialsFilePath],
-		TLSClientCertPath:       cfg[ConfigKeyTLSClientCertPath],
-		TLSClientPrivateKeyPath: cfg[ConfigKeyTLSClientPrivateKeyPath],
-		TLSRootCACertPath:       cfg[ConfigKeyTLSRootCACertPath],
+		URLs:                    strings.Split(cfg[KeyURLs], ","),
+		Subject:                 cfg[KeySubject],
+		ConnectionName:          cfg[KeyConnectionName],
+		NKeyPath:                cfg[KeyNKeyPath],
+		CredentialsFilePath:     cfg[KeyCredentialsFilePath],
+		TLSClientCertPath:       cfg[KeyTLSClientCertPath],
+		TLSClientPrivateKeyPath: cfg[KeyTLSClientPrivateKeyPath],
+		TLSRootCACertPath:       cfg[KeyTLSRootCACertPath],
 	}
 
 	config.setDefaults()

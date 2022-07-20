@@ -40,9 +40,9 @@ func TestParse(t *testing.T) {
 			name: "success, valid StreamName, all other are defaults",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyStreamName:     "SuperStream",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyStreamName: "SuperStream",
 				},
 			},
 			want: Config{
@@ -61,8 +61,8 @@ func TestParse(t *testing.T) {
 			name: "fail, mode is jetstream, but streamName is empty",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222",
-					config.ConfigKeySubject: "foo",
+					config.KeyURLs:    "nats://127.0.0.1:1222",
+					config.KeySubject: "foo",
 				},
 			},
 			want:    Config{},
@@ -72,9 +72,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid StreamName, unallowed symbols",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyStreamName:     "sup3r@stream!\\!ame",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyStreamName: "sup3r@stream!\\!ame",
 				},
 			},
 			want:    Config{},
@@ -84,9 +84,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid StreamName, length is too long",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyStreamName:     "superLongStreamNameWithALotOfsymbolsWithinIt",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyStreamName: "superLongStreamNameWithALotOfsymbolsWithinIt",
 				},
 			},
 			want:    Config{},
@@ -96,9 +96,9 @@ func TestParse(t *testing.T) {
 			name: "success, default values",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyStreamName:     "stream",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyStreamName: "stream",
 				},
 			},
 			want: Config{
@@ -117,10 +117,10 @@ func TestParse(t *testing.T) {
 			name: "success, set buffer size",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyBufferSize:     "128",
-					ConfigKeyStreamName:     "stream",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyBufferSize: "128",
+					ConfigKeyStreamName: "stream",
 				},
 			},
 			want: Config{
@@ -139,9 +139,9 @@ func TestParse(t *testing.T) {
 			name: "success, default buffer size",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyStreamName:     "stream",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyStreamName: "stream",
 				},
 			},
 			want: Config{
@@ -160,9 +160,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid buffer size",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyBufferSize:     "8",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyBufferSize: "8",
 				},
 			},
 			want:    Config{},
@@ -172,9 +172,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid buffer size",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyBufferSize:     "what",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyBufferSize: "what",
 				},
 			},
 			want:    Config{},
@@ -184,10 +184,10 @@ func TestParse(t *testing.T) {
 			name: "success, all ack policy",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyAckPolicy:      "all",
-					ConfigKeyStreamName:     "stream",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyAckPolicy:  "all",
+					ConfigKeyStreamName: "stream",
 				},
 			},
 			want: Config{
@@ -205,10 +205,10 @@ func TestParse(t *testing.T) {
 			name: "success, none ack policy",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyAckPolicy:      "none",
-					ConfigKeyStreamName:     "stream",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyAckPolicy:  "none",
+					ConfigKeyStreamName: "stream",
 				},
 			},
 			want: Config{
@@ -227,9 +227,9 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid ack policy",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyAckPolicy:      "wrong",
+					config.KeyURLs:     "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:  "foo",
+					ConfigKeyAckPolicy: "wrong",
 				},
 			},
 			want:    Config{},
@@ -239,11 +239,11 @@ func TestParse(t *testing.T) {
 			name: "success, deliver policy new",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyStreamName:     "mystream",
-					ConfigKeyDeliverPolicy:  "new",
-					ConfigKeyAckPolicy:      "explicit",
+					config.KeyURLs:         "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:      "foo",
+					ConfigKeyStreamName:    "mystream",
+					ConfigKeyDeliverPolicy: "new",
+					ConfigKeyAckPolicy:     "explicit",
 				},
 			},
 			want: Config{
@@ -262,10 +262,10 @@ func TestParse(t *testing.T) {
 			name: "fail, invalid deliver policy",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyDeliverPolicy:  "wrong",
-					ConfigKeyAckPolicy:      "explicit",
+					config.KeyURLs:         "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:      "foo",
+					ConfigKeyDeliverPolicy: "wrong",
+					ConfigKeyAckPolicy:     "explicit",
 				},
 			},
 			want:    Config{},
@@ -275,10 +275,10 @@ func TestParse(t *testing.T) {
 			name: "success, custom durable name",
 			args: args{
 				cfg: map[string]string{
-					config.ConfigKeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.ConfigKeySubject: "foo",
-					ConfigKeyDurable:        "my_super_durable",
-					ConfigKeyStreamName:     "stream",
+					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:   "foo",
+					ConfigKeyDurable:    "my_super_durable",
+					ConfigKeyStreamName: "stream",
 				},
 			},
 			want: Config{
