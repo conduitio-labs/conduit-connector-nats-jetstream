@@ -8,7 +8,7 @@ The [NATS](https://nats.io/) JetStream connector is one of [Conduit](https://git
 
 - [Go](https://go.dev/) 1.18
 - (optional) [golangci-lint](https://github.com/golangci/golangci-lint) 1.45.2
-- [NATS](https://nats.io/download/) 2.8.4 and [nats.go](https://github.com/nats-io/nats.go) library v1.16.0
+- [NATS](https://nats.io/download/) 2.8.4
 
 ### How to build it
 
