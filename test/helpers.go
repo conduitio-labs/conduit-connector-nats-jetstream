@@ -32,3 +32,21 @@ func GetTestConnection() (*nats.Conn, error) {
 
 	return conn, nil
 }
+
+// CreateTestStream creates a test stream.
+func CreateTestStream(conn *nats.Conn, streamName string, subjects []string) error {
+	jetstream, err := conn.JetStream()
+	if err != nil {
+		return fmt.Errorf("get jetstream context: %w", err)
+	}
+
+	_, err = jetstream.AddStream(&nats.StreamConfig{
+		Name:     streamName,
+		Subjects: subjects,
+	})
+	if err != nil {
+		return fmt.Errorf("add stream: %w", err)
+	}
+
+	return nil
+}
