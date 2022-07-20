@@ -79,6 +79,19 @@ func Specification() sdk.Specification {
 				Required:    false,
 				Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",
 			},
+			config.KeyMaxReconnects: {
+				Default:  "5",
+				Required: false,
+				Description: "Sets the number of reconnect attempts " +
+					"that will be tried before giving up. If negative, " +
+					"then it will never give up trying to reconnect.",
+			},
+			config.KeyReconnectWait: {
+				Default:  "5s",
+				Required: false,
+				Description: "Sets the time to backoff after attempting a reconnect " +
+					"to a server that we were already connected to previously.",
+			},
 			source.ConfigKeyBufferSize: {
 				Default:     "1024",
 				Required:    false,

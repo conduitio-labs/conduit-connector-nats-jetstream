@@ -47,8 +47,10 @@ func TestParse(t *testing.T) {
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject: "foo",
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				StreamName:    "SuperStream",
 				BufferSize:    defaultBufferSize,
@@ -103,8 +105,10 @@ func TestParse(t *testing.T) {
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject: "foo",
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
@@ -125,8 +129,10 @@ func TestParse(t *testing.T) {
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject: "foo",
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				StreamName:    "stream",
 				BufferSize:    128,
@@ -146,8 +152,10 @@ func TestParse(t *testing.T) {
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject: "foo",
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
@@ -192,8 +200,10 @@ func TestParse(t *testing.T) {
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject: "foo",
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				StreamName: "stream",
 				BufferSize: defaultBufferSize,
@@ -213,8 +223,10 @@ func TestParse(t *testing.T) {
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject: "foo",
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
@@ -248,8 +260,10 @@ func TestParse(t *testing.T) {
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject: "foo",
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				StreamName:    "mystream",
 				BufferSize:    defaultBufferSize,
@@ -283,8 +297,10 @@ func TestParse(t *testing.T) {
 			},
 			want: Config{
 				Config: config.Config{
-					URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject: "foo",
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
 				},
 				StreamName:    "stream",
 				Durable:       "my_super_durable",
