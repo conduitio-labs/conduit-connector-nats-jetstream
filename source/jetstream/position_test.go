@@ -24,21 +24,15 @@ import (
 func Test_position_marshalPosition(t *testing.T) {
 	t.Parallel()
 
-	type fields struct {
-		Durable string
-		Stream  string
-		Subject string
-		OptSeq  uint64
-	}
 	tests := []struct {
 		name    string
-		fields  fields
+		fields  position
 		want    sdk.Position
 		wantErr bool
 	}{
 		{
 			name: "success, all fields",
-			fields: fields{
+			fields: position{
 				Durable: "conduit_push_consumer",
 				Stream:  "FOO_STREAM",
 				Subject: "foo_subject",
@@ -52,7 +46,7 @@ func Test_position_marshalPosition(t *testing.T) {
 		},
 		{
 			name:   "success, empty",
-			fields: fields{},
+			fields: position{},
 			want: sdk.Position(
 				`{"durable":"","stream":"","subject":"","timestamp":"0001-01-01T00:00:00Z","opt_seq":0}`,
 			),
