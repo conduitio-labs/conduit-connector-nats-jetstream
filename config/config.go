@@ -117,6 +117,11 @@ func Parse(cfg map[string]string) (Config, error) {
 	return config, nil
 }
 
+// ToURL joins the Config's URLs strings together and returns them as one string.
+func (c *Config) ToURL() string {
+	return strings.Join(c.URLs, ",")
+}
+
 // parseMaxReconnects parses the maxReconnects string and
 // if it's not empty set cfg.MaxReconnects to its integer representation.
 func (c *Config) parseMaxReconnects(maxReconnectsStr string) error {
