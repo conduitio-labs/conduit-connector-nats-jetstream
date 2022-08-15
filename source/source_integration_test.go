@@ -15,10 +15,10 @@
 package source
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
@@ -98,7 +98,7 @@ func TestSource_Read_JetStream(t *testing.T) {
 			break
 		}
 
-		if !reflect.DeepEqual(record.Payload.Bytes(), []byte(`{"level": "info"}`)) {
+		if !bytes.Equal(record.Payload.Bytes(), []byte(`{"level": "info"}`)) {
 			t.Fatalf("Source.Read = %v, want %v", record.Payload.Bytes(), []byte(`{"level": "info"}`))
 
 			return
