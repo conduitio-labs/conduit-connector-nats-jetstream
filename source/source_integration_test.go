@@ -15,10 +15,10 @@
 package source
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
@@ -44,97 +44,93 @@ func TestSource_Open(t *testing.T) {
 	}
 }
 
-func TestSource_Read_JetStream(t *testing.T) {
+func TestSource_Read_JetStream_oneMessage(t *testing.T) {
 	t.Parallel()
 
-	t.Run("success, one message", func(t *testing.T) {
-		t.Parallel()
+	stream, subject := "mystreamreadone", "foo_one"
 
-		stream, subject := "mystreamreadone", "foo_one"
+	source, err := createTestJetStream(t, stream, subject)
+	if err != nil {
+		t.Fatalf("create test jetstream: %v", err)
 
-		source, err := createTestJetStream(t, stream, subject)
-		if err != nil {
-			t.Fatalf("create test jetstream: %v", err)
+		return
+	}
 
-			return
-		}
-
-		t.Cleanup(func() {
-			if err := source.Teardown(context.Background()); err != nil {
-				t.Fatalf("teardown source: %v", err)
-			}
-		})
-
-		testConn, err := test.GetTestConnection()
-		if err != nil {
-			t.Fatalf("get test connection: %v", err)
-
-			return
-		}
-
-		err = testConn.Publish(subject, []byte(`{"level": "info"}`))
-		if err != nil {
-			t.Fatalf("publish message: %v", err)
-
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-		defer cancel()
-
-		var record sdk.Record
-		for {
-			record, err = source.Read(ctx)
-			if err != nil {
-				if errors.Is(err, sdk.ErrBackoffRetry) {
-					continue
-				}
-				t.Fatalf("read message: %v", err)
-
-				return
-			}
-
-			break
-		}
-
-		if !reflect.DeepEqual(record.Payload.Bytes(), []byte(`{"level": "info"}`)) {
-			t.Fatalf("Source.Read = %v, want %v", record.Payload.Bytes(), []byte(`{"level": "info"}`))
-
-			return
+	t.Cleanup(func() {
+		if err := source.Teardown(context.Background()); err != nil {
+			t.Fatalf("teardown source: %v", err)
 		}
 	})
 
-	t.Run("success, no messages, backof retry", func(t *testing.T) {
-		t.Parallel()
+	testConn, err := test.GetTestConnection()
+	if err != nil {
+		t.Fatalf("get test connection: %v", err)
 
-		stream, subject := "mystreamtwo", "foo_two"
+		return
+	}
 
-		source, err := createTestJetStream(t, stream, subject)
+	err = testConn.Publish(subject, []byte(`{"level": "info"}`))
+	if err != nil {
+		t.Fatalf("publish message: %v", err)
+
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	var record sdk.Record
+	for {
+		record, err = source.Read(ctx)
 		if err != nil {
-			t.Fatalf("create test jetstream: %v", err)
-
-			return
-		}
-
-		t.Cleanup(func() {
-			if err := source.Teardown(context.Background()); err != nil {
-				t.Fatalf("teardown source: %v", err)
+			if errors.Is(err, sdk.ErrBackoffRetry) {
+				continue
 			}
-		})
-
-		_, err = source.Read(context.Background())
-		if err == nil {
-			t.Fatal("Source.Read expected backoff retry error, got nil")
-
-			return
-		}
-
-		if err != nil && !errors.Is(err, sdk.ErrBackoffRetry) {
 			t.Fatalf("read message: %v", err)
 
 			return
 		}
+
+		break
+	}
+
+	if !bytes.Equal(record.Payload.Bytes(), []byte(`{"level": "info"}`)) {
+		t.Fatalf("Source.Read = %v, want %v", record.Payload.Bytes(), []byte(`{"level": "info"}`))
+
+		return
+	}
+}
+
+func TestSource_Read_JetStream_backoffRetry(t *testing.T) {
+	t.Parallel()
+
+	stream, subject := "mystreamtwo", "foo_two"
+
+	source, err := createTestJetStream(t, stream, subject)
+	if err != nil {
+		t.Fatalf("create test jetstream: %v", err)
+
+		return
+	}
+
+	t.Cleanup(func() {
+		if err := source.Teardown(context.Background()); err != nil {
+			t.Fatalf("teardown source: %v", err)
+		}
 	})
+
+	_, err = source.Read(context.Background())
+	if err == nil {
+		t.Fatal("Source.Read expected backoff retry error, got nil")
+
+		return
+	}
+
+	if err != nil && !errors.Is(err, sdk.ErrBackoffRetry) {
+		t.Fatalf("read message: %v", err)
+
+		return
+	}
 }
 
 func createTestJetStream(t *testing.T, stream, subject string) (sdk.Source, error) {

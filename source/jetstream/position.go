@@ -24,11 +24,16 @@ import (
 
 // position defines a position model for the JetStream iterator.
 type position struct {
-	Durable   string    `json:"durable"`
-	Stream    string    `json:"stream"`
-	Subject   string    `json:"subject"`
+	// Durable is a durable consumer name.
+	Durable string `json:"durable"`
+	// Stream is a name of a stream the consumer reading from.
+	Stream string `json:"stream"`
+	// Subject is a name of a subject the consumer reading from.
+	Subject string `json:"subject"`
+	// Timestamp of a message or the time the message was read by the connector.
 	Timestamp time.Time `json:"timestamp"`
-	OptSeq    uint64    `json:"opt_seq"`
+	// OptSeq is a position of a message in a stream.
+	OptSeq uint64 `json:"opt_seq"`
 }
 
 // marshalPosition marshals the underlying position into a sdk.Position as JSON bytes.

@@ -17,7 +17,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/common"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source/jetstream"
@@ -59,7 +58,7 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		return fmt.Errorf("get connection options: %w", err)
 	}
 
-	conn, err := nats.Connect(strings.Join(s.config.URLs, ","), opts...)
+	conn, err := nats.Connect(s.config.ToURL(), opts...)
 	if err != nil {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
