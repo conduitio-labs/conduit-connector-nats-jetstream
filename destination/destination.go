@@ -26,20 +26,12 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Writer defines a writer interface needed for the Destination.
-type Writer interface {
-	Write(ctx context.Context, record sdk.Record) error
-	WriteAsync(ctx context.Context, record sdk.Record, ackFunc sdk.AckFunc) (batchIsFull bool, err error)
-	Flush(ctx context.Context) error
-	Close(ctx context.Context) error
-}
-
 // Destination NATS Connector persists records to a NATS subject or stream.
 type Destination struct {
 	sdk.UnimplementedDestination
 
 	config Config
-	writer Writer
+	writer *jetstream.Writer
 }
 
 // NewDestination creates new instance of the Destination.
