@@ -48,6 +48,19 @@ func TestIterator_HasNext(t *testing.T) {
 			want: true,
 		},
 		{
+			name: "true, multiple messages",
+			fields: fields{
+				messages: make(chan *nats.Msg, 2),
+			},
+			fillFunc: func(c chan *nats.Msg) {
+				c <- &nats.Msg{
+					Subject: "foo",
+					Data:    []byte("something"),
+				}
+			},
+			want: true,
+		},
+		{
 			name: "false, no messages",
 			fields: fields{
 				messages: make(chan *nats.Msg, 1),
@@ -62,16 +75,18 @@ func TestIterator_HasNext(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			i := &Iterator{
+			it := &Iterator{
 				messages: tt.fields.messages,
 			}
 
-			if tt.fillFunc != nil {
-				tt.fillFunc(i.messages)
-			}
+			for i := 0; i < cap(it.messages); i++ {
+				if tt.fillFunc != nil {
+					tt.fillFunc(it.messages)
+				}
 
-			if got := i.HasNext(context.Background()); got != tt.want {
-				t.Errorf("Iterator.HasNext() = %v, want %v", got, tt.want)
+				if got := it.HasNext(context.Background()); got != tt.want {
+					t.Errorf("Iterator.HasNext() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
