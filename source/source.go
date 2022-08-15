@@ -24,19 +24,11 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// Iterator defines an iterator interface.
-type Iterator interface {
-	HasNext(ctx context.Context) bool
-	Next(ctx context.Context) (sdk.Record, error)
-	Ack(ctx context.Context, position sdk.Position) error
-	Stop() error
-}
-
 // Source operates source logic.
 type Source struct {
 	sdk.UnimplementedSource
 	config   Config
-	iterator Iterator
+	iterator *jetstream.Iterator
 }
 
 // NewSource creates new instance of the Source.
