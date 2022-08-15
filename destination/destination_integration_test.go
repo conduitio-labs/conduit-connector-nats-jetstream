@@ -24,7 +24,7 @@ import (
 	"github.com/matryer/is"
 )
 
-func TestDestination_Open(t *testing.T) {
+func TestDestination_Open_Success(t *testing.T) {
 	t.Parallel()
 
 	is := is.New(t)
@@ -33,49 +33,51 @@ func TestDestination_Open(t *testing.T) {
 	is.NoErr(err)
 
 	err = test.CreateTestStream(conn, t.Name(), []string{
-		"foo_destination",
+		"foo_destination_success",
 	})
 	is.NoErr(err)
 
-	t.Run("success, jetstream", func(t *testing.T) {
-		t.Parallel()
+	destination := NewDestination()
 
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.KeyURLs:    test.TestURL,
-			config.KeySubject: "foo_destination",
-		})
-		is.NoErr(err)
-
-		err = destination.Open(context.Background())
-		is.NoErr(err)
-
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
+	err = destination.Configure(context.Background(), map[string]string{
+		config.KeyURLs:    test.TestURL,
+		config.KeySubject: "foo_destination_success",
 	})
+	is.NoErr(err)
 
-	t.Run("fail, url is pointed to a non-existent server", func(t *testing.T) {
-		t.Parallel()
+	err = destination.Open(context.Background())
+	is.NoErr(err)
 
-		is := is.New(t)
+	err = destination.Teardown(context.Background())
+	is.NoErr(err)
+}
 
-		destination := NewDestination()
+func TestDestination_Open_Fail(t *testing.T) {
+	t.Parallel()
 
-		err := destination.Configure(context.Background(), map[string]string{
-			config.KeyURLs:    "nats://localhost:6666",
-			config.KeySubject: "foo_destination",
-		})
-		is.NoErr(err)
+	is := is.New(t)
 
-		err = destination.Open(context.Background())
-		is.True(err != nil)
+	conn, err := test.GetTestConnection()
+	is.NoErr(err)
 
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
+	err = test.CreateTestStream(conn, t.Name(), []string{
+		"foo_destination_fail",
 	})
+	is.NoErr(err)
+
+	destination := NewDestination()
+
+	err = destination.Configure(context.Background(), map[string]string{
+		config.KeyURLs:    "nats://localhost:6666",
+		config.KeySubject: "foo_destination_fail",
+	})
+	is.NoErr(err)
+
+	err = destination.Open(context.Background())
+	is.True(err != nil)
+
+	err = destination.Teardown(context.Background())
+	is.NoErr(err)
 }
 
 func TestDestination_Write(t *testing.T) {
@@ -91,34 +93,28 @@ func TestDestination_Write(t *testing.T) {
 	})
 	is.NoErr(err)
 
-	t.Run("success, jetstream sync write, 1 message, batch size is 1", func(t *testing.T) {
-		t.Parallel()
+	destination := NewDestination()
 
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.KeyURLs:     test.TestURL,
-			config.KeySubject:  "foo_destination_write_jetstream",
-			ConfigKeyBatchSize: "1",
-		})
-		is.NoErr(err)
-
-		err = destination.Open(context.Background())
-		is.NoErr(err)
-
-		err = destination.Write(context.Background(), sdk.Record{
-			Payload: sdk.RawData([]byte("hello")),
-		})
-		is.NoErr(err)
-
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
+	err = destination.Configure(context.Background(), map[string]string{
+		config.KeyURLs:     test.TestURL,
+		config.KeySubject:  "foo_destination_write_jetstream",
+		ConfigKeyBatchSize: "1",
 	})
+	is.NoErr(err)
+
+	err = destination.Open(context.Background())
+	is.NoErr(err)
+
+	err = destination.Write(context.Background(), sdk.Record{
+		Payload: sdk.RawData([]byte("hello")),
+	})
+	is.NoErr(err)
+
+	err = destination.Teardown(context.Background())
+	is.NoErr(err)
 }
 
-func TestDestination_WriteAsync(t *testing.T) {
+func TestDestination_WriteAsync_MessagesCountAreEqualToBatchSize(t *testing.T) {
 	t.Parallel()
 
 	is := is.New(t)
@@ -127,97 +123,107 @@ func TestDestination_WriteAsync(t *testing.T) {
 	is.NoErr(err)
 
 	err = test.CreateTestStream(conn, t.Name(), []string{
-		"foo_destination_write_async_jetstream",
+		"foo_destination_write_async_jetstream_100_messages_100_batch_size",
 	})
 	is.NoErr(err)
 
-	t.Run("success, jetstream async write, 100 messages, batch size is 100", func(t *testing.T) {
-		t.Parallel()
+	destination := NewDestination()
 
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.KeyURLs:     test.TestURL,
-			config.KeySubject:  "foo_destination_write_async_jetstream",
-			ConfigKeyBatchSize: "100",
-		})
-		is.NoErr(err)
-
-		err = destination.Open(context.Background())
-		is.NoErr(err)
-
-		for i := 0; i < 100; i++ {
-			err = destination.WriteAsync(context.Background(), sdk.Record{
-				Payload: sdk.RawData([]byte("hello")),
-			}, func(err error) error {
-				return err
-			})
-			is.NoErr(err)
-		}
-
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
+	err = destination.Configure(context.Background(), map[string]string{
+		config.KeyURLs:     test.TestURL,
+		config.KeySubject:  "foo_destination_write_async_jetstream_100_messages_100_batch_size",
+		ConfigKeyBatchSize: "100",
 	})
+	is.NoErr(err)
 
-	t.Run("success, jetstream async write, 100 messages, batch size is 50", func(t *testing.T) {
-		t.Parallel()
+	err = destination.Open(context.Background())
+	is.NoErr(err)
 
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.KeyURLs:     test.TestURL,
-			config.KeySubject:  "foo_destination_write_async_jetstream",
-			ConfigKeyBatchSize: "50",
-		})
-		is.NoErr(err)
-
-		err = destination.Open(context.Background())
-		is.NoErr(err)
-
-		for i := 0; i < 100; i++ {
-			err = destination.WriteAsync(context.Background(), sdk.Record{
-				Payload: sdk.RawData([]byte("hello")),
-			}, func(err error) error {
-				return err
-			})
-			is.NoErr(err)
-		}
-
-		err = destination.Teardown(context.Background())
-		is.NoErr(err)
-	})
-
-	t.Run("fail, jetstream try async write, 1 message, batch is 1", func(t *testing.T) {
-		t.Parallel()
-
-		is := is.New(t)
-
-		destination := NewDestination()
-
-		err := destination.Configure(context.Background(), map[string]string{
-			config.KeyURLs:     test.TestURL,
-			config.KeySubject:  "foo_destination_write_async_jetstream",
-			ConfigKeyBatchSize: "1",
-		})
-		is.NoErr(err)
-
-		err = destination.Open(context.Background())
-		is.NoErr(err)
-
-		record := sdk.Record{
+	for i := 0; i < 100; i++ {
+		err = destination.WriteAsync(context.Background(), sdk.Record{
 			Payload: sdk.RawData([]byte("hello")),
-		}
-
-		err = destination.WriteAsync(context.Background(), record, func(err error) error {
+		}, func(err error) error {
 			return err
 		})
-		is.Equal(err, sdk.ErrUnimplemented)
-
-		err = destination.Teardown(context.Background())
 		is.NoErr(err)
+	}
+
+	err = destination.Teardown(context.Background())
+	is.NoErr(err)
+}
+
+func TestDestination_WriteAsync_MessagesCountAreNotEqualToBatchSize(t *testing.T) {
+	t.Parallel()
+
+	is := is.New(t)
+
+	conn, err := test.GetTestConnection()
+	is.NoErr(err)
+
+	err = test.CreateTestStream(conn, t.Name(), []string{
+		"foo_destination_write_async_jetstream_100_messages_50_batch_size",
 	})
+	is.NoErr(err)
+
+	destination := NewDestination()
+
+	err = destination.Configure(context.Background(), map[string]string{
+		config.KeyURLs:     test.TestURL,
+		config.KeySubject:  "foo_destination_write_async_jetstream_100_messages_50_batch_size",
+		ConfigKeyBatchSize: "50",
+	})
+	is.NoErr(err)
+
+	err = destination.Open(context.Background())
+	is.NoErr(err)
+
+	for i := 0; i < 100; i++ {
+		err = destination.WriteAsync(context.Background(), sdk.Record{
+			Payload: sdk.RawData([]byte("hello")),
+		}, func(err error) error {
+			return err
+		})
+		is.NoErr(err)
+	}
+
+	err = destination.Teardown(context.Background())
+	is.NoErr(err)
+}
+
+func TestDestination_WriteAsync_MessagesCountOneBatchSizeOne(t *testing.T) {
+	t.Parallel()
+
+	is := is.New(t)
+
+	conn, err := test.GetTestConnection()
+	is.NoErr(err)
+
+	err = test.CreateTestStream(conn, t.Name(), []string{
+		"foo_destination_write_async_jetstream_1_message_1_batch_size",
+	})
+	is.NoErr(err)
+
+	destination := NewDestination()
+
+	err = destination.Configure(context.Background(), map[string]string{
+		config.KeyURLs:     test.TestURL,
+		config.KeySubject:  "foo_destination_write_async_jetstream_1_message_1_batch_size",
+		ConfigKeyBatchSize: "1",
+	})
+	is.NoErr(err)
+
+	err = destination.Open(context.Background())
+	is.NoErr(err)
+
+	record := sdk.Record{
+		Payload: sdk.RawData([]byte("hello")),
+	}
+
+	err = destination.WriteAsync(context.Background(), record, func(err error) error {
+		return err
+	})
+	is.Equal(err, sdk.ErrUnimplemented)
+
+	err = destination.Teardown(context.Background())
+	is.NoErr(err)
 }
