@@ -117,7 +117,7 @@ func Test_parsePosition(t *testing.T) {
 			name: "success, empty",
 			args: args{
 				sdkPosition: sdk.Position([]byte(
-					`{"durable":"","stream":"","subject":"","opt_seq":0}`,
+					`{}`,
 				)),
 			},
 			want: position{

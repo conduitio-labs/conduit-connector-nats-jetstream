@@ -212,7 +212,7 @@ func (i *Iterator) canAck(sdkPosition sdk.Position) error {
 		return fmt.Errorf("get position: %w", err)
 	}
 
-	if bytes.Compare(position, sdkPosition) != 0 {
+	if !bytes.Equal(position, sdkPosition) {
 		return fmt.Errorf(
 			"ack is out-of-order, requested ack for %q, but first unack. Message is %q", sdkPosition, position,
 		)
