@@ -36,7 +36,7 @@ The connector allows you to configure a size of a pending message buffer. If you
 
 ### Position handling
 
-The position during this mode contains the following fields: `durable` (a durable consumer name), `stream` (a name of a stream the consumer reading from), `subject`, `timestamp` (timestamp of a message or the time the message was read by the connector) and `opt_seq` (the position of a message in a stream).
+The position is initialized based on incoming messages. To ensure the uniqueness of the position and the ability to continue reading from it, the most important message metadata is stored within it.
 
 ### Configuration
 
