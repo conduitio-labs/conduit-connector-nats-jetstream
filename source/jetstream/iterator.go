@@ -190,13 +190,13 @@ func getConsumerOptions(params IteratorParams) ([]nats.SubOpt, error) {
 		opts = append(opts, nats.AckNone())
 	}
 
-	opts = append(opts, []nats.SubOpt{
+	opts = append(opts,
 		nats.Durable(params.Durable),
 		nats.ReplayInstant(),
 		nats.DeliverSubject(fmt.Sprintf("%s.%s", params.Durable, params.Stream)),
 		nats.EnableFlowControl(),
 		nats.IdleHeartbeat(heartbeatTimeout),
-	}...)
+	)
 
 	return opts, nil
 }
