@@ -9,6 +9,7 @@ The [NATS](https://nats.io/) JetStream connector is one of [Conduit](https://git
 - [Go](https://go.dev/) 1.18
 - (optional) [golangci-lint](https://github.com/golangci/golangci-lint) 1.45.2
 - [NATS](https://nats.io/download/) 2.8.4
+- [Docker](https://www.docker.com/) and [docker-compose](https://docs.docker.com/compose/).
 
 ### How to build it
 
@@ -22,13 +23,13 @@ Run `make test` to run all the unit and integration tests, which require Docker 
 
 ### Connection and authentication
 
-The NATS JetStream connector connects to a NATS server or a cluster with the required parameters `urls`, `subject` and `mode`. If your NATS server has a configured authentication you can pass an authentication details in the connection URL. For example, for a token authentication the url will look like: `nats://mytoken@127.0.0.1:4222`, and for a username/password authentication: `nats://username:password@127.0.0.1:4222`. But if your server is using [NKey](https://docs.nats.io/using-nats/developer/connecting/nkey) or [Credentials file](https://docs.nats.io/using-nats/developer/connecting/creds) for authentication you must configure them via seperate [configuration](#configuration) parameters.
+The NATS JetStream connector connects to a NATS server or a cluster with the required parameters `urls`, `subject` and `mode`. If your NATS server has a configured authentication you can pass an authentication details in the connection URL. For example, for a token authentication the url will look like: `nats://mytoken@127.0.0.1:4222`, and for a username/password authentication: `nats://username:password@127.0.0.1:4222`. But if your server is using [NKey](https://docs.nats.io/using-nats/developer/connecting/nkey) or [Credentials file](https://docs.nats.io/using-nats/developer/connecting/creds) for authentication you must configure them via separate [configuration](#configuration) parameters.
 
 ### Receiving messages
 
 The connector creates a durable NATS consumer which means it's able to read messages that were written to a NATS stream before the connector was created, unless configured otherwise. The `deliverPolicy` configuration parameter allows you to control this behavior.
 
-- If the `deliverPolicy` is equal to `new` the connector will only consume messages which were created after the connector.
+- If the `deliverPolicy` is equal to `new` the connector will only consume messages which were created after the connector started.
 - If the `deliverPolicy` is equal to `all` the connector will consume all messages in a stream.
 
 The connector allows you to configure a size of a pending message buffer. If your NATS server has hundreds of thousands of messages and a high frequency of their writing, it's highly recommended to set the `bufferSize` parameter high enough (`65536` or more, depending on how much RAM you have). Otherwise, you risk getting a [slow consumers](https://docs.nats.io/running-a-nats-service/nats_admin/slow_consumers) problem.

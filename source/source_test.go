@@ -30,9 +30,9 @@ func TestSource_Configure(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		args    args
-		wantErr bool
+		name        string
+		args        args
+		expectedErr string
 	}{
 		{
 			name: "success, correct config",
@@ -44,7 +44,6 @@ func TestSource_Configure(t *testing.T) {
 					ConfigKeyStreamName: "stream",
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "fail, empty config",
@@ -52,7 +51,8 @@ func TestSource_Configure(t *testing.T) {
 				ctx: context.Background(),
 				cfg: map[string]string{},
 			},
-			wantErr: true,
+			expectedErr: `parse config: parse common config: validate config: "URLs[0]" value must be a valid url; ` +
+				`"subject" value must be set`,
 		},
 		{
 			name: "fail, invalid config",
@@ -62,7 +62,7 @@ func TestSource_Configure(t *testing.T) {
 					config.KeyURLs: "nats://127.0.0.1:4222",
 				},
 			},
-			wantErr: true,
+			expectedErr: `parse config: parse common config: validate config: "subject" value must be set`,
 		},
 	}
 
@@ -73,8 +73,16 @@ func TestSource_Configure(t *testing.T) {
 			t.Parallel()
 
 			s := &Source{}
-			if err := s.Configure(tt.args.ctx, tt.args.cfg); (err != nil) != tt.wantErr {
-				t.Errorf("Source.Configure() error = %v, wantErr %v", err, tt.wantErr)
+			if err := s.Configure(tt.args.ctx, tt.args.cfg); err != nil {
+				if tt.expectedErr == "" {
+					t.Errorf("Source.Configure() unexpected error = %v", err)
+
+					return
+				}
+
+				if err.Error() != tt.expectedErr {
+					t.Errorf("Source.Configure() error = %s, wantErr %s", err.Error(), tt.expectedErr)
+				}
 			}
 		})
 	}
