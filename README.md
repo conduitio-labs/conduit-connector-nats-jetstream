@@ -29,7 +29,7 @@ The NATS JetStream connector connects to a NATS server or a cluster with the req
 
 The connector creates a durable NATS consumer which means it's able to read messages that were written to a NATS stream before the connector was created, unless configured otherwise. The `deliverPolicy` configuration parameter allows you to control this behavior.
 
-- If the `deliverPolicy` is equal to `new` the connector will only consume messages which were created after the connector.
+- If the `deliverPolicy` is equal to `new` the connector will only consume messages which were created after the connector started.
 - If the `deliverPolicy` is equal to `all` the connector will consume all messages in a stream.
 
 The connector allows you to configure a size of a pending message buffer. If your NATS server has hundreds of thousands of messages and a high frequency of their writing, it's highly recommended to set the `bufferSize` parameter high enough (`65536` or more, depending on how much RAM you have). Otherwise, you risk getting a [slow consumers](https://docs.nats.io/running-a-nats-service/nats_admin/slow_consumers) problem.
