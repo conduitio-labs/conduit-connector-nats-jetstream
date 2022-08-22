@@ -229,7 +229,7 @@ func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
 	}
 
 	// retrieve a message metadata one more time to grab a metadata.Timestamp
-	// and use it for a sdk.Record.CreatedAt
+	// and use it for a sdk.Record.Metadata
 	metadata, err := msg.Metadata()
 	if err != nil {
 		return sdk.Record{}, fmt.Errorf("get message metadata: %w", err)
@@ -239,11 +239,10 @@ func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
 		metadata.Timestamp = time.Now()
 	}
 
-	return sdk.Record{
-		Position:  position,
-		CreatedAt: metadata.Timestamp,
-		Payload:   sdk.RawData(msg.Data),
-	}, nil
+	sdkMetadata := make(sdk.Metadata)
+	sdkMetadata.SetCreatedAt(metadata.Timestamp)
+
+	return sdk.Util.Source.NewRecordCreate(position, sdkMetadata, nil, sdk.RawData(msg.Data)), nil
 }
 
 // getMessagePosition returns a position of a message in the form of sdk.Position.

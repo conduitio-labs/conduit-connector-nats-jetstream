@@ -95,8 +95,8 @@ func TestSource_Read_JetStream_oneMessage(t *testing.T) {
 		break
 	}
 
-	if !bytes.Equal(record.Payload.Bytes(), []byte(`{"level": "info"}`)) {
-		t.Fatalf("Source.Read = %v, want %v", record.Payload.Bytes(), []byte(`{"level": "info"}`))
+	if !bytes.Equal(record.Payload.After.Bytes(), []byte(`{"level": "info"}`)) {
+		t.Fatalf("Source.Read = %v, want %v", record.Payload.After.Bytes(), []byte(`{"level": "info"}`))
 
 		return
 	}
