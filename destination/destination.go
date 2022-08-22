@@ -16,11 +16,11 @@ package destination
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
 	common "github.com/conduitio-labs/conduit-connector-nats-jetstream/common"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/destination/jetstream"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
@@ -37,6 +37,83 @@ type Destination struct {
 // NewDestination creates new instance of the Destination.
 func NewDestination() sdk.Destination {
 	return &Destination{}
+}
+
+func (d *Destination) Parameters() map[string]sdk.Parameter {
+	return map[string]sdk.Parameter{
+		config.KeyURLs: {
+			Default:     "",
+			Required:    true,
+			Description: "The connection URLs pointed to NATS instances.",
+		},
+		config.KeySubject: {
+			Default:     "",
+			Required:    true,
+			Description: "A name of a subject to which the connector should write.",
+		},
+		config.KeyConnectionName: {
+			Default:     "conduit-connection-<uuid>",
+			Required:    false,
+			Description: "Optional connection name which will come in handy when it comes to monitoring.",
+		},
+		config.KeyNKeyPath: {
+			Default:     "",
+			Required:    false,
+			Description: "A path pointed to a NKey pair.",
+		},
+		config.KeyCredentialsFilePath: {
+			Default:     "",
+			Required:    false,
+			Description: "A path pointed to a credentials file.",
+		},
+		config.KeyTLSClientCertPath: {
+			Default:  "",
+			Required: false,
+			//nolint:lll // long description
+			Description: "A path pointed to a TLS client certificate, must be present if tls.clientPrivateKeyPath field is also present.",
+		},
+		config.KeyTLSClientPrivateKeyPath: {
+			Default:  "",
+			Required: false,
+			//nolint:lll // long description
+			Description: "A path pointed to a TLS client private key, must be present if tls.clientCertPath field is also present.",
+		},
+		config.KeyTLSRootCACertPath: {
+			Default:     "",
+			Required:    false,
+			Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",
+		},
+		config.KeyMaxReconnects: {
+			Default:  "5",
+			Required: false,
+			Description: "Sets the number of reconnect attempts " +
+				"that will be tried before giving up. If negative, " +
+				"then it will never give up trying to reconnect.",
+		},
+		config.KeyReconnectWait: {
+			Default:  "5s",
+			Required: false,
+			Description: "Sets the time to backoff after attempting a reconnect " +
+				"to a server that we were already connected to previously.",
+		},
+		ConfigKeyBatchSize: {
+			Default:  "1",
+			Required: false,
+			Description: "Defines a message batch size. " +
+				"If it's equal to 1 messages will be sent synchronously. " +
+				"If it's greater than 1 messages will be sent asynchronously (batched).",
+		},
+		ConfigKeyRetryWait: {
+			Default:     "5s",
+			Required:    false,
+			Description: "Sets the timeout to wait for a message to be resent, if send fails.",
+		},
+		ConfigKeyRetryAttempts: {
+			Default:     "3",
+			Required:    false,
+			Description: "Sets a numbers of attempts to send a message, if send fails.",
+		},
+	}
 }
 
 // Configure parses and initializes the config.
@@ -78,33 +155,14 @@ func (d *Destination) Open(ctx context.Context) error {
 }
 
 // Write writes a record into a Destination.
-func (d *Destination) Write(ctx context.Context, record sdk.Record) error {
-	return d.writer.Write(ctx, record)
-}
-
-// WriteAsync asynchronously writes a record into a Destination.
-// JetStream supports it when the batchSize is greater than 1, otherwise the method will fallback to Write.
-// When a batch is full the method calls Flush.
-func (d *Destination) WriteAsync(ctx context.Context, record sdk.Record, ackFunc sdk.AckFunc) error {
-	batchIsFull, err := d.writer.WriteAsync(ctx, record, ackFunc)
-	if err != nil {
-		if errors.Is(err, sdk.ErrUnimplemented) {
-			return sdk.ErrUnimplemented
+func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, error) {
+	for i, record := range records {
+		if err := d.writer.Write(ctx, record); err != nil {
+			return i, fmt.Errorf("write: %w", err)
 		}
-
-		return fmt.Errorf("write async: %w", err)
 	}
 
-	if batchIsFull {
-		return d.Flush(ctx)
-	}
-
-	return nil
-}
-
-// Flush flushes batched records.
-func (d *Destination) Flush(ctx context.Context) error {
-	return d.writer.Flush(ctx)
+	return len(records), nil
 }
 
 // Teardown gracefully closes connections.

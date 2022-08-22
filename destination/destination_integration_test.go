@@ -105,124 +105,16 @@ func TestDestination_Write(t *testing.T) {
 	err = destination.Open(context.Background())
 	is.NoErr(err)
 
-	err = destination.Write(context.Background(), sdk.Record{
-		Payload: sdk.RawData([]byte("hello")),
+	var written int
+	written, err = destination.Write(context.Background(), []sdk.Record{
+		{
+			Payload: sdk.Change{
+				After: sdk.RawData([]byte("hello")),
+			},
+		},
 	})
 	is.NoErr(err)
-
-	err = destination.Teardown(context.Background())
-	is.NoErr(err)
-}
-
-func TestDestination_WriteAsync_MessagesCountAreEqualToBatchSize(t *testing.T) {
-	t.Parallel()
-
-	is := is.New(t)
-
-	conn, err := test.GetTestConnection()
-	is.NoErr(err)
-
-	err = test.CreateTestStream(conn, t.Name(), []string{
-		"foo_destination_write_async_jetstream_100_messages_100_batch_size",
-	})
-	is.NoErr(err)
-
-	destination := NewDestination()
-
-	err = destination.Configure(context.Background(), map[string]string{
-		config.KeyURLs:     test.TestURL,
-		config.KeySubject:  "foo_destination_write_async_jetstream_100_messages_100_batch_size",
-		ConfigKeyBatchSize: "100",
-	})
-	is.NoErr(err)
-
-	err = destination.Open(context.Background())
-	is.NoErr(err)
-
-	for i := 0; i < 100; i++ {
-		err = destination.WriteAsync(context.Background(), sdk.Record{
-			Payload: sdk.RawData([]byte("hello")),
-		}, func(err error) error {
-			return err
-		})
-		is.NoErr(err)
-	}
-
-	err = destination.Teardown(context.Background())
-	is.NoErr(err)
-}
-
-func TestDestination_WriteAsync_MessagesCountAreNotEqualToBatchSize(t *testing.T) {
-	t.Parallel()
-
-	is := is.New(t)
-
-	conn, err := test.GetTestConnection()
-	is.NoErr(err)
-
-	err = test.CreateTestStream(conn, t.Name(), []string{
-		"foo_destination_write_async_jetstream_100_messages_50_batch_size",
-	})
-	is.NoErr(err)
-
-	destination := NewDestination()
-
-	err = destination.Configure(context.Background(), map[string]string{
-		config.KeyURLs:     test.TestURL,
-		config.KeySubject:  "foo_destination_write_async_jetstream_100_messages_50_batch_size",
-		ConfigKeyBatchSize: "50",
-	})
-	is.NoErr(err)
-
-	err = destination.Open(context.Background())
-	is.NoErr(err)
-
-	for i := 0; i < 100; i++ {
-		err = destination.WriteAsync(context.Background(), sdk.Record{
-			Payload: sdk.RawData([]byte("hello")),
-		}, func(err error) error {
-			return err
-		})
-		is.NoErr(err)
-	}
-
-	err = destination.Teardown(context.Background())
-	is.NoErr(err)
-}
-
-func TestDestination_WriteAsync_MessagesCountOneBatchSizeOne(t *testing.T) {
-	t.Parallel()
-
-	is := is.New(t)
-
-	conn, err := test.GetTestConnection()
-	is.NoErr(err)
-
-	err = test.CreateTestStream(conn, t.Name(), []string{
-		"foo_destination_write_async_jetstream_1_message_1_batch_size",
-	})
-	is.NoErr(err)
-
-	destination := NewDestination()
-
-	err = destination.Configure(context.Background(), map[string]string{
-		config.KeyURLs:     test.TestURL,
-		config.KeySubject:  "foo_destination_write_async_jetstream_1_message_1_batch_size",
-		ConfigKeyBatchSize: "1",
-	})
-	is.NoErr(err)
-
-	err = destination.Open(context.Background())
-	is.NoErr(err)
-
-	record := sdk.Record{
-		Payload: sdk.RawData([]byte("hello")),
-	}
-
-	err = destination.WriteAsync(context.Background(), record, func(err error) error {
-		return err
-	})
-	is.Equal(err, sdk.ErrUnimplemented)
+	is.Equal(written, 1)
 
 	err = destination.Teardown(context.Background())
 	is.NoErr(err)

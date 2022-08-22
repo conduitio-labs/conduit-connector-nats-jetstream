@@ -31,8 +31,8 @@ type driver struct {
 	sdk.ConfigurableAcceptanceTestDriver
 }
 
-func (d driver) GenerateRecord(t *testing.T) sdk.Record {
-	record := d.ConfigurableAcceptanceTestDriver.GenerateRecord(t)
+func (d driver) GenerateRecord(t *testing.T, operation sdk.Operation) sdk.Record {
+	record := d.ConfigurableAcceptanceTestDriver.GenerateRecord(t, operation)
 	// we don't need key for NATS JetStream
 	record.Key = nil
 
@@ -54,6 +54,7 @@ func TestAcceptance(t *testing.T) {
 				BeforeTest:        beforeTest(t, cfg),
 				GoleakOptions: []goleak.Option{
 					// nats.go spawns a separate goroutine to process flush requests
+					// and we have no chance to stop it using the library's API
 					goleak.IgnoreTopFunction("github.com/nats-io/nats%2ego.(*Conn).flusher"),
 					goleak.IgnoreTopFunction("sync.runtime_notifyListWait"),
 					goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"),
