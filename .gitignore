@@ -1,0 +1,6 @@
+# editors stuff
+.idea
+.vscode
+
+# binary
+conduit-connector-nats-jetstream
