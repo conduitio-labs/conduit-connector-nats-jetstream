@@ -47,11 +47,6 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Required:    true,
 			Description: "The connection URLs pointed to NATS instances.",
 		},
-		ConfigKeyStreamName: {
-			Default:     "",
-			Required:    true,
-			Description: "A stream name.",
-		},
 		config.KeySubject: {
 			Default:     "",
 			Required:    true,
@@ -112,6 +107,11 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Required:    false,
 			Description: "A consumer name.",
 		},
+		ConfigKeyDeliverSubject: {
+			Default:     "<durable>.conduit",
+			Required:    false,
+			Description: "Specifies the JetStream consumer deliver subject.",
+		},
 		ConfigKeyDeliverPolicy: {
 			Default:     "all",
 			Required:    false,
@@ -157,14 +157,14 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	})
 
 	s.iterator, err = jetstream.NewIterator(ctx, jetstream.IteratorParams{
-		Conn:          conn,
-		BufferSize:    s.config.BufferSize,
-		Durable:       s.config.Durable,
-		Stream:        s.config.StreamName,
-		Subject:       s.config.Subject,
-		SDKPosition:   position,
-		DeliverPolicy: s.config.DeliverPolicy,
-		AckPolicy:     s.config.AckPolicy,
+		Conn:           conn,
+		BufferSize:     s.config.BufferSize,
+		Durable:        s.config.Durable,
+		DeliverSubject: s.config.DeliverSubject,
+		Subject:        s.config.Subject,
+		SDKPosition:    position,
+		DeliverPolicy:  s.config.DeliverPolicy,
+		AckPolicy:      s.config.AckPolicy,
 	})
 	if err != nil {
 		return fmt.Errorf("init jetstream iterator: %w", err)

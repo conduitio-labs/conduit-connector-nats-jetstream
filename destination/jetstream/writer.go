@@ -29,20 +29,16 @@ import (
 type Writer struct {
 	sync.Mutex
 
-	conn          *nats.Conn
-	subject       string
-	jetstream     nats.JetStreamContext
-	batchSize     int
-	publishOpts   []nats.PubOpt
-	retryWait     time.Duration
-	retryAttempts int
+	conn        *nats.Conn
+	subject     string
+	jetstream   nats.JetStreamContext
+	publishOpts []nats.PubOpt
 }
 
 // WriterParams is an incoming params for the NewWriter function.
 type WriterParams struct {
 	Conn          *nats.Conn
 	Subject       string
-	BatchSize     int
 	RetryWait     time.Duration
 	RetryAttempts int
 }
@@ -55,23 +51,15 @@ func NewWriter(ctx context.Context, params WriterParams) (*Writer, error) {
 	}
 
 	return &Writer{
-		conn:          params.Conn,
-		subject:       params.Subject,
-		jetstream:     jetstream,
-		batchSize:     params.BatchSize,
-		publishOpts:   getPublishOptions(params),
-		retryWait:     params.RetryWait,
-		retryAttempts: params.RetryAttempts,
+		conn:        params.Conn,
+		subject:     params.Subject,
+		jetstream:   jetstream,
+		publishOpts: getPublishOptions(params),
 	}, nil
 }
 
-// Write synchronously writes a record if the w.batchSize if equal to 1.
-// If the batch size is greater than 1 the method will return an sdk.ErrUnimplemented.
+// Write synchronously writes a record.
 func (w *Writer) Write(ctx context.Context, record sdk.Record) error {
-	if w.batchSize > 1 {
-		return sdk.ErrUnimplemented
-	}
-
 	_, err := w.jetstream.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
 	if err != nil {
 		return fmt.Errorf("publish sync: %w", err)

@@ -96,9 +96,8 @@ func TestDestination_Write(t *testing.T) {
 	destination := NewDestination()
 
 	err = destination.Configure(context.Background(), map[string]string{
-		config.KeyURLs:     test.TestURL,
-		config.KeySubject:  "foo_destination_write_jetstream",
-		ConfigKeyBatchSize: "1",
+		config.KeyURLs:    test.TestURL,
+		config.KeySubject: "foo_destination_write_jetstream",
 	})
 	is.NoErr(err)
 

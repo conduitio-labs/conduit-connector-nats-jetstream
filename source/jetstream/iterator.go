@@ -43,14 +43,14 @@ type Iterator struct {
 
 // IteratorParams contains incoming params for the NewIterator function.
 type IteratorParams struct {
-	Conn          *nats.Conn
-	BufferSize    int
-	Durable       string
-	Stream        string
-	Subject       string
-	SDKPosition   sdk.Position
-	DeliverPolicy nats.DeliverPolicy
-	AckPolicy     nats.AckPolicy
+	Conn           *nats.Conn
+	BufferSize     int
+	Durable        string
+	DeliverSubject string
+	Subject        string
+	SDKPosition    sdk.Position
+	DeliverPolicy  nats.DeliverPolicy
+	AckPolicy      nats.AckPolicy
 }
 
 // NewIterator creates new instance of the Iterator.
@@ -193,7 +193,7 @@ func getConsumerOptions(params IteratorParams) ([]nats.SubOpt, error) {
 	opts = append(opts,
 		nats.Durable(params.Durable),
 		nats.ReplayInstant(),
-		nats.DeliverSubject(fmt.Sprintf("%s.%s", params.Durable, params.Stream)),
+		nats.DeliverSubject(params.DeliverSubject),
 		nats.EnableFlowControl(),
 		nats.IdleHeartbeat(heartbeatTimeout),
 	)

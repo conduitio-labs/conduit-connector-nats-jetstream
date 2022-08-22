@@ -39,9 +39,8 @@ func TestSource_Configure(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:4222",
-					config.KeySubject:   "foo",
-					ConfigKeyStreamName: "stream",
+					config.KeyURLs:    "nats://127.0.0.1:4222",
+					config.KeySubject: "foo",
 				},
 			},
 		},

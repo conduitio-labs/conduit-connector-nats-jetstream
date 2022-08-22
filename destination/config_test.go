@@ -49,29 +49,6 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				BatchSize:     defaultBatchSize,
-				RetryWait:     defaultRetryWait,
-				RetryAttempts: defaultRetryAttempts,
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, custom batch size",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:     "nats://localhost:4222",
-					config.KeySubject:  "foo",
-					ConfigKeyBatchSize: "300",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://localhost:4222"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				BatchSize:     300,
 				RetryWait:     defaultRetryWait,
 				RetryAttempts: defaultRetryAttempts,
 			},
@@ -93,7 +70,6 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				BatchSize:     defaultBatchSize,
 				RetryWait:     time.Second * 3,
 				RetryAttempts: defaultRetryAttempts,
 			},
@@ -115,35 +91,10 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				BatchSize:     defaultBatchSize,
 				RetryWait:     defaultRetryWait,
 				RetryAttempts: 5,
 			},
 			wantErr: false,
-		},
-		{
-			name: "fail, invalid batch size",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:     "nats://localhost:4222",
-					config.KeySubject:  "foo",
-					ConfigKeyBatchSize: "wrong",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
-		},
-		{
-			name: "fail, invalid batch size, min",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:     "nats://localhost:4222",
-					config.KeySubject:  "foo",
-					ConfigKeyBatchSize: "0",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
 		},
 		{
 			name: "fail, invalid retry wait",

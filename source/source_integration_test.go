@@ -136,9 +136,8 @@ func TestSource_Read_JetStream_backoffRetry(t *testing.T) {
 func createTestJetStream(t *testing.T, stream, subject string) (sdk.Source, error) {
 	source := NewSource()
 	err := source.Configure(context.Background(), map[string]string{
-		config.KeyURLs:      test.TestURL,
-		config.KeySubject:   subject,
-		ConfigKeyStreamName: stream,
+		config.KeyURLs:    test.TestURL,
+		config.KeySubject: subject,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("configure source: %v", err)

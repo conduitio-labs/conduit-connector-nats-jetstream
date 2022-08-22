@@ -36,7 +36,7 @@ type Destination struct {
 
 // NewDestination creates new instance of the Destination.
 func NewDestination() sdk.Destination {
-	return &Destination{}
+	return sdk.DestinationWithMiddleware(&Destination{}, sdk.DefaultDestinationMiddleware()...)
 }
 
 func (d *Destination) Parameters() map[string]sdk.Parameter {
@@ -96,13 +96,6 @@ func (d *Destination) Parameters() map[string]sdk.Parameter {
 			Description: "Sets the time to backoff after attempting a reconnect " +
 				"to a server that we were already connected to previously.",
 		},
-		ConfigKeyBatchSize: {
-			Default:  "1",
-			Required: false,
-			Description: "Defines a message batch size. " +
-				"If it's equal to 1 messages will be sent synchronously. " +
-				"If it's greater than 1 messages will be sent asynchronously (batched).",
-		},
 		ConfigKeyRetryWait: {
 			Default:     "5s",
 			Required:    false,
@@ -143,7 +136,6 @@ func (d *Destination) Open(ctx context.Context) error {
 	d.writer, err = jetstream.NewWriter(ctx, jetstream.WriterParams{
 		Conn:          conn,
 		Subject:       d.config.Subject,
-		BatchSize:     d.config.BatchSize,
 		RetryWait:     d.config.RetryWait,
 		RetryAttempts: d.config.RetryAttempts,
 	})

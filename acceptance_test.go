@@ -19,7 +19,6 @@ import (
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
@@ -78,7 +77,6 @@ func beforeTest(t *testing.T, cfg map[string]string) func(t *testing.T) {
 		err = test.CreateTestStream(conn, streamName, []string{subject})
 		is.NoErr(err)
 
-		cfg[source.ConfigKeyStreamName] = streamName
 		cfg[config.KeySubject] = subject
 	}
 }
