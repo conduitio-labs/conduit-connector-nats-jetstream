@@ -17,6 +17,7 @@
 package nats
 
 import (
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/destination"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
@@ -24,5 +25,5 @@ import (
 var Connector = sdk.Connector{
 	NewSpecification: Specification,
 	NewSource:        source.NewSource,
-	NewDestination:   nil,
+	NewDestination:   destination.NewDestination,
 }

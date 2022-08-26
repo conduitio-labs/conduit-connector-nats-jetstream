@@ -4,3 +4,6 @@
 
 # binary
 conduit-connector-nats-jetstream
+
+# testing stuff
+*.rest

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package source
+package destination
 
 import (
 	"context"
@@ -21,7 +21,7 @@ import (
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 )
 
-func TestSource_Configure(t *testing.T) {
+func TestDestination_Configure(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
@@ -50,8 +50,8 @@ func TestSource_Configure(t *testing.T) {
 				ctx: context.Background(),
 				cfg: map[string]string{},
 			},
-			expectedErr: `parse config: parse common config: validate config: "URLs[0]" value must be a valid url; ` +
-				`"subject" value must be set`,
+			expectedErr: `parse config: parse common config: validate config: "URLs[0]" value must be a valid url;` +
+				` "subject" value must be set`,
 		},
 		{
 			name: "fail, invalid config",
@@ -71,16 +71,16 @@ func TestSource_Configure(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			s := &Source{}
-			if err := s.Configure(tt.args.ctx, tt.args.cfg); err != nil {
+			d := &Destination{}
+			if err := d.Configure(tt.args.ctx, tt.args.cfg); err != nil {
 				if tt.expectedErr == "" {
-					t.Errorf("Source.Configure() unexpected error = %v", err)
+					t.Errorf("Destination.Configure() unexpected error = %v", err)
 
 					return
 				}
 
 				if err.Error() != tt.expectedErr {
-					t.Errorf("Source.Configure() error = %s, wantErr %s", err.Error(), tt.expectedErr)
+					t.Errorf("Destination.Configure() error = %s, wantErr %s", err.Error(), tt.expectedErr)
 				}
 			}
 		})

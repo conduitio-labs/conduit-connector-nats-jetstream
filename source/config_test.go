@@ -37,12 +37,12 @@ func TestParse(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "success, valid StreamName, all other are defaults",
+			name: "success, valid DeliverSubject, all other are defaults",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyStreamName: "SuperStream",
+					config.KeyURLs:          "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:       "foo",
+					ConfigKeyDeliverSubject: "super.subject",
 				},
 			},
 			want: Config{
@@ -52,55 +52,19 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				StreamName:    "SuperStream",
-				BufferSize:    defaultBufferSize,
-				DeliverPolicy: defaultDeliverPolicy,
-				AckPolicy:     defaultAckPolicy,
+				DeliverSubject: "super.subject",
+				BufferSize:     defaultBufferSize,
+				DeliverPolicy:  defaultDeliverPolicy,
+				AckPolicy:      defaultAckPolicy,
 			},
 			wantErr: false,
-		},
-		{
-			name: "fail, mode is jetstream, but streamName is empty",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:1222",
-					config.KeySubject: "foo",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
-		},
-		{
-			name: "fail, invalid StreamName, unallowed symbols",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyStreamName: "sup3r@stream!\\!ame",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
-		},
-		{
-			name: "fail, invalid StreamName, length is too long",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyStreamName: "superLongStreamNameWithALotOfsymbolsWithinIt",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
 		},
 		{
 			name: "success, default values",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyStreamName: "stream",
+					config.KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject: "foo",
 				},
 			},
 			want: Config{
@@ -110,10 +74,10 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				StreamName:    "stream",
-				BufferSize:    defaultBufferSize,
-				DeliverPolicy: defaultDeliverPolicy,
-				AckPolicy:     defaultAckPolicy,
+				DeliverSubject: "",
+				BufferSize:     defaultBufferSize,
+				DeliverPolicy:  defaultDeliverPolicy,
+				AckPolicy:      defaultAckPolicy,
 			},
 			wantErr: false,
 		},
@@ -124,7 +88,6 @@ func TestParse(t *testing.T) {
 					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.KeySubject:   "foo",
 					ConfigKeyBufferSize: "128",
-					ConfigKeyStreamName: "stream",
 				},
 			},
 			want: Config{
@@ -134,7 +97,6 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				StreamName:    "stream",
 				BufferSize:    128,
 				DeliverPolicy: defaultDeliverPolicy,
 				AckPolicy:     defaultAckPolicy,
@@ -145,9 +107,8 @@ func TestParse(t *testing.T) {
 			name: "success, default buffer size",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyStreamName: "stream",
+					config.KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject: "foo",
 				},
 			},
 			want: Config{
@@ -157,7 +118,6 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
 				DeliverPolicy: defaultDeliverPolicy,
 				AckPolicy:     defaultAckPolicy,
@@ -192,10 +152,9 @@ func TestParse(t *testing.T) {
 			name: "success, all ack policy",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyAckPolicy:  "all",
-					ConfigKeyStreamName: "stream",
+					config.KeyURLs:     "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:  "foo",
+					ConfigKeyAckPolicy: "all",
 				},
 			},
 			want: Config{
@@ -205,7 +164,6 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				StreamName: "stream",
 				BufferSize: defaultBufferSize,
 				AckPolicy:  nats.AckAllPolicy,
 			},
@@ -215,10 +173,9 @@ func TestParse(t *testing.T) {
 			name: "success, none ack policy",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyAckPolicy:  "none",
-					ConfigKeyStreamName: "stream",
+					config.KeyURLs:     "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject:  "foo",
+					ConfigKeyAckPolicy: "none",
 				},
 			},
 			want: Config{
@@ -228,7 +185,6 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				StreamName:    "stream",
 				BufferSize:    defaultBufferSize,
 				DeliverPolicy: defaultDeliverPolicy,
 				AckPolicy:     nats.AckNonePolicy,
@@ -253,7 +209,6 @@ func TestParse(t *testing.T) {
 				cfg: map[string]string{
 					config.KeyURLs:         "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
 					config.KeySubject:      "foo",
-					ConfigKeyStreamName:    "mystream",
 					ConfigKeyDeliverPolicy: "new",
 					ConfigKeyAckPolicy:     "explicit",
 				},
@@ -265,7 +220,6 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				StreamName:    "mystream",
 				BufferSize:    defaultBufferSize,
 				DeliverPolicy: nats.DeliverNewPolicy,
 				AckPolicy:     nats.AckExplicitPolicy,
@@ -289,10 +243,9 @@ func TestParse(t *testing.T) {
 			name: "success, custom durable name",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyDurable:    "my_super_durable",
-					ConfigKeyStreamName: "stream",
+					config.KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject: "foo",
+					ConfigKeyDurable:  "my_super_durable",
 				},
 			},
 			want: Config{
@@ -302,11 +255,11 @@ func TestParse(t *testing.T) {
 					MaxReconnects: config.DefaultMaxReconnects,
 					ReconnectWait: config.DefaultReconnectWait,
 				},
-				StreamName:    "stream",
-				Durable:       "my_super_durable",
-				BufferSize:    defaultBufferSize,
-				DeliverPolicy: nats.DeliverAllPolicy,
-				AckPolicy:     nats.AckExplicitPolicy,
+				DeliverSubject: "my_super_durable.conduit",
+				Durable:        "my_super_durable",
+				BufferSize:     defaultBufferSize,
+				DeliverPolicy:  nats.DeliverAllPolicy,
+				AckPolicy:      nats.AckExplicitPolicy,
 			},
 			wantErr: false,
 		},
@@ -331,6 +284,7 @@ func TestParse(t *testing.T) {
 
 			if strings.HasPrefix(got.Durable, defaultDurablePrefix) {
 				tt.want.Durable = got.Durable
+				tt.want.DeliverSubject = got.DeliverSubject
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {

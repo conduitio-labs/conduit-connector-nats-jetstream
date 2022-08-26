@@ -33,6 +33,8 @@ const (
 	defaultBufferSize = 1024
 	// defaultDurablePrefix is the default consumer name prefix.
 	defaultDurablePrefix = "conduit-"
+	// defaultDeliverSubjectSuffix is the default deliver subject suffix.
+	defaultDeliverSubjectSuffix = "conduit"
 	// defaultDeliverPolicy is the default message deliver policy.
 	defaultDeliverPolicy = nats.DeliverAllPolicy
 	// defaultAckPolicy is the default message acknowledge policy.
@@ -42,8 +44,8 @@ const (
 const (
 	// ConfigKeyBufferSize is a config name for a buffer size.
 	ConfigKeyBufferSize = "bufferSize"
-	// ConfigKeyStreamName is a config name for a stream name.
-	ConfigKeyStreamName = "streamName"
+	// ConfigKeyDeliverSubject is a config name for a deliver subject.
+	ConfigKeyDeliverSubject = "deliverSubject"
 	// ConfigKeyDurable is a config name for a durable name.
 	ConfigKeyDurable = "durable"
 	// ConfigKeyDeliverPolicy is a config name for a message deliver policy.
@@ -57,12 +59,11 @@ type Config struct {
 	config.Config
 
 	BufferSize int `key:"bufferSize" validate:"omitempty,min=64"`
-	// For more detailed naming conventions see
-	// https://docs.nats.io/running-a-nats-service/nats_admin/jetstream_admin/naming.
-	StreamName string `key:"streamName" validate:"required,alphanum,max=32"`
 	// Durable is the name of the Consumer, if set will make a consumer durable,
 	// allowing resuming consumption where left off.
 	Durable string `key:"durable" validate:"required"`
+	// DeliverSubject specifies the JetStream consumer deliver subject.
+	DeliverSubject string `json:"deliverSubject" validate:"required"`
 	// DeliverPolicy defines where in the stream the connector should start receiving messages.
 	DeliverPolicy nats.DeliverPolicy `key:"deliverPolicy" validate:"oneof=0 2"`
 	// AckPolicy defines how messages should be acknowledged.
@@ -77,9 +78,9 @@ func Parse(cfg map[string]string) (Config, error) {
 	}
 
 	sourceConfig := Config{
-		Config:     common,
-		StreamName: cfg[ConfigKeyStreamName],
-		Durable:    cfg[ConfigKeyDurable],
+		Config:         common,
+		DeliverSubject: cfg[ConfigKeyDeliverSubject],
+		Durable:        cfg[ConfigKeyDurable],
 	}
 
 	if err := sourceConfig.parseBufferSize(cfg[ConfigKeyBufferSize]); err != nil {
@@ -157,10 +158,19 @@ func (c *Config) setDefaults() {
 	if c.Durable == "" {
 		c.Durable = c.generateDurableName()
 	}
+
+	if c.DeliverSubject == "" {
+		c.DeliverSubject = c.generateDeliverSubject()
+	}
 }
 
 // generateDurableName generates a random durable (consumer) name.
 // The durable name will be made up of the default durable prefix and a random UUID.
 func (c *Config) generateDurableName() string {
 	return defaultDurablePrefix + uuid.New().String()
+}
+
+// generateDeliverSubject generates a deliver subject in the format <durable>.conduit.
+func (c *Config) generateDeliverSubject() string {
+	return fmt.Sprintf("%s.%s", c.Durable, defaultDeliverSubjectSuffix)
 }

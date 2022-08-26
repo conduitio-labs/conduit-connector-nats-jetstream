@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/common"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source/jetstream"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -45,11 +46,6 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Default:     "",
 			Required:    true,
 			Description: "The connection URLs pointed to NATS instances.",
-		},
-		ConfigKeyStreamName: {
-			Default:     "",
-			Required:    true,
-			Description: "A stream name.",
 		},
 		config.KeySubject: {
 			Default:     "",
@@ -111,6 +107,11 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Required:    false,
 			Description: "A consumer name.",
 		},
+		ConfigKeyDeliverSubject: {
+			Default:     "<durable>.conduit",
+			Required:    false,
+			Description: "Specifies the JetStream consumer deliver subject.",
+		},
 		ConfigKeyDeliverPolicy: {
 			Default:     "all",
 			Required:    false,
@@ -139,7 +140,7 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 
 // Open opens a connection to NATS and initializes iterators.
 func (s *Source) Open(ctx context.Context, position sdk.Position) error {
-	opts, err := s.getConnectionOptions()
+	opts, err := common.GetConnectionOptions(s.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %w", err)
 	}
@@ -156,14 +157,14 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	})
 
 	s.iterator, err = jetstream.NewIterator(ctx, jetstream.IteratorParams{
-		Conn:          conn,
-		BufferSize:    s.config.BufferSize,
-		Durable:       s.config.Durable,
-		Stream:        s.config.StreamName,
-		Subject:       s.config.Subject,
-		SDKPosition:   position,
-		DeliverPolicy: s.config.DeliverPolicy,
-		AckPolicy:     s.config.AckPolicy,
+		Conn:           conn,
+		BufferSize:     s.config.BufferSize,
+		Durable:        s.config.Durable,
+		DeliverSubject: s.config.DeliverSubject,
+		Subject:        s.config.Subject,
+		SDKPosition:    position,
+		DeliverPolicy:  s.config.DeliverPolicy,
+		AckPolicy:      s.config.AckPolicy,
 	})
 	if err != nil {
 		return fmt.Errorf("init jetstream iterator: %w", err)
@@ -207,42 +208,4 @@ func (s *Source) Teardown(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// getConnectionOptions returns connection options based on the config.
-func (s *Source) getConnectionOptions() ([]nats.Option, error) {
-	var opts []nats.Option
-
-	if s.config.ConnectionName != "" {
-		opts = append(opts, nats.Name(s.config.ConnectionName))
-	}
-
-	if s.config.NKeyPath != "" {
-		opt, err := nats.NkeyOptionFromSeed(s.config.NKeyPath)
-		if err != nil {
-			return nil, fmt.Errorf("load NKey pair: %w", err)
-		}
-
-		opts = append(opts, opt)
-	}
-
-	if s.config.CredentialsFilePath != "" {
-		opts = append(opts, nats.UserCredentials(s.config.CredentialsFilePath))
-	}
-
-	if s.config.TLSClientCertPath != "" && s.config.TLSClientPrivateKeyPath != "" {
-		opts = append(opts, nats.ClientCert(
-			s.config.TLSClientCertPath,
-			s.config.TLSClientPrivateKeyPath,
-		))
-	}
-
-	if s.config.TLSRootCACertPath != "" {
-		opts = append(opts, nats.RootCAs(s.config.TLSRootCACertPath))
-	}
-
-	opts = append(opts, nats.MaxReconnects(s.config.MaxReconnects))
-	opts = append(opts, nats.ReconnectWait(s.config.ReconnectWait))
-
-	return opts, nil
 }

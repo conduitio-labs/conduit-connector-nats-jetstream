@@ -25,13 +25,12 @@ import (
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
-	"github.com/nats-io/nats.go"
 )
 
 func TestSource_Open(t *testing.T) {
 	t.Parallel()
 
-	stream, subject := "mystreamone", "foo_source_one"
+	stream, subject := "mystreamoneopen", "foo_one_h"
 
 	source, err := createTestJetStream(t, stream, subject)
 	if err != nil {
@@ -137,9 +136,8 @@ func TestSource_Read_JetStream_backoffRetry(t *testing.T) {
 func createTestJetStream(t *testing.T, stream, subject string) (sdk.Source, error) {
 	source := NewSource()
 	err := source.Configure(context.Background(), map[string]string{
-		config.KeyURLs:      test.TestURL,
-		config.KeySubject:   subject,
-		ConfigKeyStreamName: stream,
+		config.KeyURLs:    test.TestURL,
+		config.KeySubject: subject,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("configure source: %v", err)
@@ -150,15 +148,7 @@ func createTestJetStream(t *testing.T, stream, subject string) (sdk.Source, erro
 		return nil, fmt.Errorf("get test connection: %v", err)
 	}
 
-	js, err := testConn.JetStream()
-	if err != nil {
-		return nil, fmt.Errorf("create jetstream context: %v", err)
-	}
-
-	_, err = js.AddStream(&nats.StreamConfig{
-		Name:     stream,
-		Subjects: []string{subject},
-	})
+	err = test.CreateTestStream(testConn, stream, []string{subject})
 	if err != nil {
 		return nil, fmt.Errorf("add stream: %v", err)
 	}

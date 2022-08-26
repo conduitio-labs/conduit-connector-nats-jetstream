@@ -6,7 +6,9 @@ require (
 	github.com/conduitio/conduit-connector-sdk v0.2.1-0.20220812170036-f0ac2714fe94
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/google/uuid v1.3.0
+	github.com/matryer/is v1.4.0
 	github.com/nats-io/nats.go v1.16.0
+	go.uber.org/goleak v1.1.12
 	go.uber.org/multierr v1.8.0
 )
 
@@ -21,7 +23,6 @@ require (
 	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/matryer/is v1.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
@@ -32,7 +33,6 @@ require (
 	github.com/rs/zerolog v1.27.0 // indirect
 	go.buf.build/grpc/go/conduitio/conduit-connector-protocol v1.4.3 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	go.uber.org/goleak v1.1.12 // indirect
 	golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8 // indirect
 	golang.org/x/net v0.0.0-20220812174116-3211cb980234 // indirect
 	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect
