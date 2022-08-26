@@ -17,21 +17,12 @@ package jetstream
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
 // position defines a position model for the JetStream iterator.
 type position struct {
-	// Durable is a durable consumer name.
-	Durable string `json:"durable"`
-	// Stream is a name of a stream the consumer reading from.
-	Stream string `json:"stream"`
-	// Subject is a name of a subject the consumer reading from.
-	Subject string `json:"subject"`
-	// Timestamp of a message or the time the message was read by the connector.
-	Timestamp time.Time `json:"timestamp"`
 	// OptSeq is a position of a message in a stream.
 	OptSeq uint64 `json:"opt_seq"`
 }
