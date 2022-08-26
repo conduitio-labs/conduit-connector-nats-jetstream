@@ -33,14 +33,10 @@ func Test_position_marshalPosition(t *testing.T) {
 		{
 			name: "success, all fields",
 			fields: position{
-				Durable: "conduit_push_consumer",
-				Stream:  "FOO_STREAM",
-				Subject: "foo_subject",
-				OptSeq:  32,
+				OptSeq: 32,
 			},
 			want: sdk.Position(
-				//nolint:lll // test
-				`{"durable":"conduit_push_consumer","stream":"FOO_STREAM","subject":"foo_subject","timestamp":"0001-01-01T00:00:00Z","opt_seq":32}`,
+				`{"opt_seq":32}`,
 			),
 			wantErr: false,
 		},
@@ -48,7 +44,7 @@ func Test_position_marshalPosition(t *testing.T) {
 			name:   "success, empty",
 			fields: position{},
 			want: sdk.Position(
-				`{"durable":"","stream":"","subject":"","timestamp":"0001-01-01T00:00:00Z","opt_seq":0}`,
+				`{"opt_seq":0}`,
 			),
 			wantErr: false,
 		},
@@ -60,10 +56,7 @@ func Test_position_marshalPosition(t *testing.T) {
 			t.Parallel()
 
 			p := position{
-				Durable: tt.fields.Durable,
-				Stream:  tt.fields.Stream,
-				Subject: tt.fields.Subject,
-				OptSeq:  tt.fields.OptSeq,
+				OptSeq: tt.fields.OptSeq,
 			}
 
 			got, err := p.marshalSDKPosition()
@@ -96,14 +89,11 @@ func Test_parsePosition(t *testing.T) {
 			name: "success, all fields",
 			args: args{
 				sdkPosition: sdk.Position([]byte(
-					`{"durable":"conduit_push_consumer","stream":"FOO_STREAM","subject":"foo_subject","opt_seq":32}`,
+					`{"opt_seq":32}`,
 				)),
 			},
 			want: position{
-				Durable: "conduit_push_consumer",
-				Stream:  "FOO_STREAM",
-				Subject: "foo_subject",
-				OptSeq:  32,
+				OptSeq: 32,
 			},
 			wantErr: false,
 		},
@@ -115,10 +105,7 @@ func Test_parsePosition(t *testing.T) {
 				)),
 			},
 			want: position{
-				Durable: "",
-				Stream:  "",
-				Subject: "",
-				OptSeq:  0,
+				OptSeq: 0,
 			},
 			wantErr: false,
 		},
@@ -128,10 +115,7 @@ func Test_parsePosition(t *testing.T) {
 				sdkPosition: sdk.Position(nil),
 			},
 			want: position{
-				Durable: "",
-				Stream:  "",
-				Subject: "",
-				OptSeq:  0,
+				OptSeq: 0,
 			},
 			wantErr: false,
 		},
@@ -139,7 +123,7 @@ func Test_parsePosition(t *testing.T) {
 			name: "fail, wrong field type",
 			args: args{
 				sdkPosition: sdk.Position([]byte(
-					`{"durable":"conduit_push_consumer","stream":"FOO_STREAM","subject":"foo_subject","opt_seq":"32"}`,
+					`{"opt_seq":"32"}`,
 				)),
 			},
 			want:    position{},

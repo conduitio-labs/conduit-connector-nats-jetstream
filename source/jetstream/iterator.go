@@ -253,11 +253,7 @@ func (i *Iterator) getMessagePosition(msg *nats.Msg) (sdk.Position, error) {
 	}
 
 	position := position{
-		Durable:   i.consumerInfo.Name,
-		Stream:    i.consumerInfo.Stream,
-		Subject:   i.subscription.Subject,
-		Timestamp: metadata.Timestamp,
-		OptSeq:    metadata.Sequence.Stream,
+		OptSeq: metadata.Sequence.Stream,
 	}
 
 	sdkPosition, err := position.marshalSDKPosition()
