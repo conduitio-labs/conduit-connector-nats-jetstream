@@ -36,7 +36,6 @@ func Test_position_marshalPosition(t *testing.T) {
 				OptSeq: 32,
 			},
 			want: sdk.Position(
-				//nolint:lll // test
 				`{"opt_seq":32}`,
 			),
 			wantErr: false,
