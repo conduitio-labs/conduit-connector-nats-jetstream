@@ -55,7 +55,7 @@ type IteratorParams struct {
 
 // getSubscribeOptions returns a NATS subscribe options based on the IteratorParams's fields.
 func (p IteratorParams) getSubscribeOptions() ([]nats.SubOpt, error) {
-	opts := make([]nats.SubOpt, 0)
+	var opts []nats.SubOpt
 
 	position, err := parsePosition(p.SDKPosition)
 	if err != nil {
