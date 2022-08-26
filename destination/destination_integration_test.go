@@ -52,6 +52,7 @@ func TestDestination_Open_Success(t *testing.T) {
 	is.NoErr(err)
 }
 
+// TestDestination_Open_Fail should fail because of the wrong URL.
 func TestDestination_Open_Fail(t *testing.T) {
 	t.Parallel()
 
