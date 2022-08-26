@@ -36,7 +36,7 @@ The connector allows you to configure a size of a pending message buffer. If you
 
 ### Position handling
 
-The position is initialized based on incoming messages. To ensure the uniqueness of the position and the ability to continue reading from it, the most important message metadata is stored within it.
+The position is initialized based on incoming messages. To ensure the ability to continue reading from it, the most important message metadata is stored within it.
 
 ### Configuration
 
