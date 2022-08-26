@@ -43,6 +43,21 @@ type WriterParams struct {
 	RetryAttempts int
 }
 
+// getPublishOptions returns a NATS publish options based on the WriterParams's fields.
+func (p WriterParams) getPublishOptions() []nats.PubOpt {
+	var opts []nats.PubOpt
+
+	if p.RetryWait != 0 {
+		opts = append(opts, nats.RetryWait(p.RetryWait))
+	}
+
+	if p.RetryAttempts != 0 {
+		opts = append(opts, nats.RetryAttempts(p.RetryAttempts))
+	}
+
+	return opts
+}
+
 // NewWriter creates new instance of the Writer.
 func NewWriter(ctx context.Context, params WriterParams) (*Writer, error) {
 	jetstream, err := params.Conn.JetStream()
@@ -54,7 +69,7 @@ func NewWriter(ctx context.Context, params WriterParams) (*Writer, error) {
 		conn:        params.Conn,
 		subject:     params.Subject,
 		jetstream:   jetstream,
-		publishOpts: getPublishOptions(params),
+		publishOpts: params.getPublishOptions(),
 	}, nil
 }
 
@@ -75,19 +90,4 @@ func (w *Writer) Close(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-// getPublishOptions returns a NATS publish options based on the provided WriterParams.
-func getPublishOptions(params WriterParams) []nats.PubOpt {
-	var opts []nats.PubOpt
-
-	if params.RetryWait != 0 {
-		opts = append(opts, nats.RetryWait(params.RetryWait))
-	}
-
-	if params.RetryAttempts != 0 {
-		opts = append(opts, nats.RetryAttempts(params.RetryAttempts))
-	}
-
-	return opts
 }

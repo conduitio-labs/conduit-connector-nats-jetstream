@@ -53,6 +53,51 @@ type IteratorParams struct {
 	AckPolicy      nats.AckPolicy
 }
 
+// getSubscribeOptions returns a NATS subscribe options based on the IteratorParams's fields.
+func (p IteratorParams) getSubscribeOptions() ([]nats.SubOpt, error) {
+	opts := make([]nats.SubOpt, 0)
+
+	position, err := parsePosition(p.SDKPosition)
+	if err != nil {
+		return nil, fmt.Errorf("parse position: %w", err)
+	}
+
+	// if the position has a non-zero OptSeq
+	// the connector will start consuming from that position
+	if position.OptSeq != 0 {
+		// add 1 to the sequence in order to skip the consumed message at this position
+		// and start consuming new messages
+		// deliverPolicy in this case will become a DeliverByStartSequencePolicy.
+		opts = append(opts, nats.StartSequence(position.OptSeq+1))
+	} else {
+		switch p.DeliverPolicy {
+		case nats.DeliverAllPolicy:
+			opts = append(opts, nats.DeliverAll())
+		case nats.DeliverNewPolicy:
+			opts = append(opts, nats.DeliverNew())
+		}
+	}
+
+	switch p.AckPolicy {
+	case nats.AckAllPolicy:
+		opts = append(opts, nats.AckAll())
+	case nats.AckExplicitPolicy:
+		opts = append(opts, nats.AckExplicit())
+	case nats.AckNonePolicy:
+		opts = append(opts, nats.AckNone())
+	}
+
+	opts = append(opts,
+		nats.Durable(p.Durable),
+		nats.ReplayInstant(),
+		nats.DeliverSubject(p.DeliverSubject),
+		nats.EnableFlowControl(),
+		nats.IdleHeartbeat(heartbeatTimeout),
+	)
+
+	return opts, nil
+}
+
 // NewIterator creates new instance of the Iterator.
 func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) {
 	jetstream, err := params.Conn.JetStream()
@@ -60,13 +105,13 @@ func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) 
 		return nil, fmt.Errorf("get jetstream context: %w", err)
 	}
 
-	consumerOpts, err := getConsumerOptions(params)
+	subscribeOpts, err := params.getSubscribeOptions()
 	if err != nil {
 		return nil, fmt.Errorf("get consumer options: %w", err)
 	}
 
 	messages := make(chan *nats.Msg, params.BufferSize)
-	subscription, err := jetstream.ChanSubscribe(params.Subject, messages, consumerOpts...)
+	subscription, err := jetstream.ChanSubscribe(params.Subject, messages, subscribeOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("chan subscribe: %w", err)
 	}
@@ -154,51 +199,6 @@ func (i *Iterator) Stop() (err error) {
 	}
 
 	return nil
-}
-
-// getConsumerOptions returns a []nats.SubOpt slice based on the incoming params and a sdk.Position.
-func getConsumerOptions(params IteratorParams) ([]nats.SubOpt, error) {
-	opts := make([]nats.SubOpt, 0)
-
-	position, err := parsePosition(params.SDKPosition)
-	if err != nil {
-		return nil, fmt.Errorf("parse position: %w", err)
-	}
-
-	// if the position has a non-zero OptSeq
-	// the connector will start consuming from that position
-	if position.OptSeq != 0 {
-		// add 1 to the sequence in order to skip the consumed message at this position
-		// and start consuming new messages
-		// deliverPolicy in this case will become a DeliverByStartSequencePolicy.
-		opts = append(opts, nats.StartSequence(position.OptSeq+1))
-	} else {
-		switch params.DeliverPolicy {
-		case nats.DeliverAllPolicy:
-			opts = append(opts, nats.DeliverAll())
-		case nats.DeliverNewPolicy:
-			opts = append(opts, nats.DeliverNew())
-		}
-	}
-
-	switch params.AckPolicy {
-	case nats.AckAllPolicy:
-		opts = append(opts, nats.AckAll())
-	case nats.AckExplicitPolicy:
-		opts = append(opts, nats.AckExplicit())
-	case nats.AckNonePolicy:
-		opts = append(opts, nats.AckNone())
-	}
-
-	opts = append(opts,
-		nats.Durable(params.Durable),
-		nats.ReplayInstant(),
-		nats.DeliverSubject(params.DeliverSubject),
-		nats.EnableFlowControl(),
-		nats.IdleHeartbeat(heartbeatTimeout),
-	)
-
-	return opts, nil
 }
 
 // canAck checks if a message at the given position can be acknowledged.
