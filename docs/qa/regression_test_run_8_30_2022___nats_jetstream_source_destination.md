@@ -1,3 +1,9 @@
+**Regression Test Run 8/30/2022 - NATS JetStream Source/Destination**
+
+**branch:** https://github.com/conduitio-labs/conduit-connector-nats-jetstream/tree/main
+
+**commit:** 710dcd01876a051e99c929f3526375d72c7c60ea
+
 | ID       | Title                                                                                                                                                                                                                            | Status | Comment |
 | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------- |
 | T2832039 | Data from two different NATS JetStream source connectors are transferred to the File Destination connector                                                                                                                       | Passed |         |
