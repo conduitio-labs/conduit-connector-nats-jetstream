@@ -15,7 +15,6 @@
 package jetstream
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -59,7 +58,7 @@ func (p WriterParams) getPublishOptions() []nats.PubOpt {
 }
 
 // NewWriter creates new instance of the Writer.
-func NewWriter(ctx context.Context, params WriterParams) (*Writer, error) {
+func NewWriter(params WriterParams) (*Writer, error) {
 	jetstream, err := params.Conn.JetStream()
 	if err != nil {
 		return nil, fmt.Errorf("get jetstream context: %w", err)
@@ -74,7 +73,7 @@ func NewWriter(ctx context.Context, params WriterParams) (*Writer, error) {
 }
 
 // Write synchronously writes a record.
-func (w *Writer) Write(ctx context.Context, record sdk.Record) error {
+func (w *Writer) Write(record sdk.Record) error {
 	_, err := w.jetstream.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
 	if err != nil {
 		return fmt.Errorf("publish sync: %w", err)
@@ -84,7 +83,7 @@ func (w *Writer) Write(ctx context.Context, record sdk.Record) error {
 }
 
 // Close closes the underlying NATS connection.
-func (w *Writer) Close(ctx context.Context) error {
+func (w *Writer) Close() error {
 	if w.conn != nil {
 		w.conn.Close()
 	}

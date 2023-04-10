@@ -99,7 +99,7 @@ func (p IteratorParams) getSubscribeOptions() ([]nats.SubOpt, error) {
 }
 
 // NewIterator creates new instance of the Iterator.
-func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) {
+func NewIterator(params IteratorParams) (*Iterator, error) {
 	jetstream, err := params.Conn.JetStream()
 	if err != nil {
 		return nil, fmt.Errorf("get jetstream context: %w", err)
@@ -132,7 +132,7 @@ func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) 
 }
 
 // HasNext checks is the iterator has messages.
-func (i *Iterator) HasNext(ctx context.Context) bool {
+func (i *Iterator) HasNext() bool {
 	return len(i.messages) > 0
 }
 
@@ -160,7 +160,7 @@ func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
 }
 
 // Ack acknowledges a message at the given position.
-func (i *Iterator) Ack(ctx context.Context, sdkPosition sdk.Position) error {
+func (i *Iterator) Ack(sdkPosition sdk.Position) error {
 	// if ack policy is 'none' just return nil here
 	if i.consumerInfo.Config.AckPolicy == nats.AckNonePolicy {
 		return nil

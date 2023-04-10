@@ -50,7 +50,7 @@ func TestAcceptance(t *testing.T) {
 				Connector:         Connector,
 				SourceConfig:      cfg,
 				DestinationConfig: cfg,
-				BeforeTest:        beforeTest(t, cfg),
+				BeforeTest:        beforeTest(cfg),
 				GoleakOptions: []goleak.Option{
 					// nats.go spawns a separate goroutine to process flush requests
 					// and we have no chance to stop it using the library's API
@@ -64,7 +64,7 @@ func TestAcceptance(t *testing.T) {
 }
 
 // beforeTest creates new stream before each test.
-func beforeTest(t *testing.T, cfg map[string]string) func(t *testing.T) {
+func beforeTest(cfg map[string]string) func(t *testing.T) {
 	return func(t *testing.T) {
 		is := is.New(t)
 

@@ -32,7 +32,7 @@ func TestSource_Open(t *testing.T) {
 
 	stream, subject := "mystreamoneopen", "foo_one_h"
 
-	source, err := createTestJetStream(t, stream, subject)
+	source, err := createTestJetStream(stream, subject)
 	if err != nil {
 		t.Fatalf("create test jetstream: %v", err)
 
@@ -49,7 +49,7 @@ func TestSource_Read_JetStream_oneMessage(t *testing.T) {
 
 	stream, subject := "mystreamreadone", "foo_one"
 
-	source, err := createTestJetStream(t, stream, subject)
+	source, err := createTestJetStream(stream, subject)
 	if err != nil {
 		t.Fatalf("create test jetstream: %v", err)
 
@@ -106,7 +106,7 @@ func TestSource_Read_JetStream_backoffRetry(t *testing.T) {
 
 	stream, subject := "mystreamtwo", "foo_two"
 
-	source, err := createTestJetStream(t, stream, subject)
+	source, err := createTestJetStream(stream, subject)
 	if err != nil {
 		t.Fatalf("create test jetstream: %v", err)
 
@@ -133,7 +133,7 @@ func TestSource_Read_JetStream_backoffRetry(t *testing.T) {
 	}
 }
 
-func createTestJetStream(t *testing.T, stream, subject string) (sdk.Source, error) {
+func createTestJetStream(stream, subject string) (sdk.Source, error) {
 	source := NewSource()
 	err := source.Configure(context.Background(), map[string]string{
 		config.KeyURLs:    test.TestURL,

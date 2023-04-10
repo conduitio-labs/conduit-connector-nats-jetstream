@@ -11,9 +11,10 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: '1.18'
+          go-version: '1.20'
       - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3.3.1
         with:
-          version: v1.45.2
+          version: v1.52.2
+          args: --timeout=2m
