@@ -110,7 +110,7 @@ func (d *Destination) Parameters() map[string]sdk.Parameter {
 }
 
 // Configure parses and initializes the config.
-func (d *Destination) Configure(ctx context.Context, cfg map[string]string) error {
+func (d *Destination) Configure(_ context.Context, cfg map[string]string) error {
 	config, err := Parse(cfg)
 	if err != nil {
 		return fmt.Errorf("parse config: %w", err)
@@ -122,7 +122,7 @@ func (d *Destination) Configure(ctx context.Context, cfg map[string]string) erro
 }
 
 // Open makes sure everything is prepared to receive records.
-func (d *Destination) Open(ctx context.Context) error {
+func (d *Destination) Open(context.Context) error {
 	opts, err := common.GetConnectionOptions(d.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %s", err)
@@ -133,7 +133,7 @@ func (d *Destination) Open(ctx context.Context) error {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
 
-	d.writer, err = jetstream.NewWriter(ctx, jetstream.WriterParams{
+	d.writer, err = jetstream.NewWriter(jetstream.WriterParams{
 		Conn:          conn,
 		Subject:       d.config.Subject,
 		RetryWait:     d.config.RetryWait,
@@ -147,9 +147,9 @@ func (d *Destination) Open(ctx context.Context) error {
 }
 
 // Write writes a record into a Destination.
-func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, error) {
+func (d *Destination) Write(_ context.Context, records []sdk.Record) (int, error) {
 	for i, record := range records {
-		if err := d.writer.Write(ctx, record); err != nil {
+		if err := d.writer.Write(record); err != nil {
 			return i, fmt.Errorf("write: %w", err)
 		}
 	}
@@ -158,9 +158,9 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 }
 
 // Teardown gracefully closes connections.
-func (d *Destination) Teardown(ctx context.Context) error {
+func (d *Destination) Teardown(context.Context) error {
 	if d.writer != nil {
-		return d.writer.Close(ctx)
+		return d.writer.Close()
 	}
 
 	return nil
