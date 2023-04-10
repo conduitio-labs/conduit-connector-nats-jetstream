@@ -126,7 +126,7 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 }
 
 // Configure parses and initializes the config.
-func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
+func (s *Source) Configure(_ context.Context, cfg map[string]string) error {
 	config, err := Parse(cfg)
 	if err != nil {
 		return fmt.Errorf("parse config: %w", err)
@@ -139,7 +139,7 @@ func (s *Source) Configure(ctx context.Context, cfg map[string]string) error {
 }
 
 // Open opens a connection to NATS and initializes iterators.
-func (s *Source) Open(ctx context.Context, position sdk.Position) error {
+func (s *Source) Open(_ context.Context, position sdk.Position) error {
 	opts, err := common.GetConnectionOptions(s.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %w", err)
@@ -156,7 +156,7 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		s.errC <- err
 	})
 
-	s.iterator, err = jetstream.NewIterator(ctx, jetstream.IteratorParams{
+	s.iterator, err = jetstream.NewIterator(jetstream.IteratorParams{
 		Conn:           conn,
 		BufferSize:     s.config.BufferSize,
 		Durable:        s.config.Durable,
@@ -181,7 +181,7 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 		return sdk.Record{}, fmt.Errorf("got an async error: %w", err)
 
 	default:
-		if !s.iterator.HasNext(ctx) {
+		if !s.iterator.HasNext() {
 			return sdk.Record{}, sdk.ErrBackoffRetry
 		}
 
@@ -195,12 +195,12 @@ func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
 }
 
 // Ack acknowledges a message at the given position.
-func (s *Source) Ack(ctx context.Context, position sdk.Position) error {
-	return s.iterator.Ack(ctx, position)
+func (s *Source) Ack(_ context.Context, position sdk.Position) error {
+	return s.iterator.Ack(position)
 }
 
 // Teardown closes connections, stops iterator.
-func (s *Source) Teardown(ctx context.Context) error {
+func (s *Source) Teardown(context.Context) error {
 	if s.iterator != nil {
 		if err := s.iterator.Stop(); err != nil {
 			return fmt.Errorf("stop iterator: %w", err)

@@ -15,7 +15,6 @@
 package jetstream
 
 import (
-	"context"
 	"testing"
 
 	"github.com/nats-io/nats.go"
@@ -84,7 +83,7 @@ func TestIterator_HasNext(t *testing.T) {
 					tt.fillFunc(it.messages)
 				}
 
-				if got := it.HasNext(context.Background()); got != tt.want {
+				if got := it.HasNext(); got != tt.want {
 					t.Errorf("Iterator.HasNext() = %v, want %v", got, tt.want)
 				}
 			}
