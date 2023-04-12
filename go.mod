@@ -3,7 +3,7 @@ module github.com/conduitio-labs/conduit-connector-nats-jetstream
 go 1.20
 
 require (
-	github.com/conduitio/conduit-connector-sdk v0.5.2
+	github.com/conduitio/conduit-connector-sdk v0.6.0
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/google/uuid v1.3.0
 	github.com/matryer/is v1.4.1
@@ -16,7 +16,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
-	github.com/conduitio/conduit-connector-protocol v0.4.1 // indirect
+	github.com/conduitio/conduit-connector-protocol v0.5.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
