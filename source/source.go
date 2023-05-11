@@ -103,7 +103,7 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Description: "A buffer size for consumed messages.",
 		},
 		ConfigKeyDurable: {
-			Default:     "conduit-<uuid>",
+			Default:     "",
 			Required:    false,
 			Description: "A consumer name.",
 		},
