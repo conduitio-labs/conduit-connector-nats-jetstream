@@ -263,6 +263,30 @@ func TestParse(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "success, generated durable name",
+			args: args{
+				cfg: map[string]string{
+					config.KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
+					config.KeySubject: "foo",
+					ConfigKeyDurable:  "",
+				},
+			},
+			want: Config{
+				Config: config.Config{
+					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
+				},
+				DeliverSubject: ".conduit",
+				Durable:        "conduit-",
+				BufferSize:     defaultBufferSize,
+				DeliverPolicy:  nats.DeliverAllPolicy,
+				AckPolicy:      nats.AckExplicitPolicy,
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -284,6 +308,9 @@ func TestParse(t *testing.T) {
 
 			if strings.HasPrefix(got.Durable, defaultDurablePrefix) {
 				tt.want.Durable = got.Durable
+			}
+
+			if strings.HasSuffix(got.DeliverSubject, defaultDeliverSubjectSuffix) {
 				tt.want.DeliverSubject = got.DeliverSubject
 			}
 
