@@ -88,7 +88,6 @@ func Parse(cfg map[string]string) (Config, error) {
 	config := Config{
 		URLs:                    strings.Split(cfg[KeyURLs], ","),
 		Subject:                 cfg[KeySubject],
-		ConnectionName:          generateConnectionName(),
 		NKeyPath:                cfg[KeyNKeyPath],
 		CredentialsFilePath:     cfg[KeyCredentialsFilePath],
 		TLSClientCertPath:       cfg[KeyTLSClientCertPath],
@@ -98,8 +97,10 @@ func Parse(cfg map[string]string) (Config, error) {
 		ReconnectWait:           DefaultReconnectWait,
 	}
 
-	if connectionName, ok := cfg[KeyConnectionName]; ok {
+	if connectionName, ok := cfg[KeyConnectionName]; ok && connectionName != "" {
 		config.ConnectionName = connectionName
+	} else {
+		config.ConnectionName = generateConnectionName()
 	}
 
 	if err := config.parseMaxReconnects(cfg[KeyMaxReconnects]); err != nil {
@@ -155,5 +156,5 @@ func (c *Config) parseReconnectWait(reconnectWaitStr string) error {
 // generateConnectionName generates a random connection name.
 // The connection name will be made up of the default connection name and a random UUID.
 func generateConnectionName() string {
-	return DefaultConnectionNamePrefix + uuid.New().String()
+	return DefaultConnectionNamePrefix + uuid.NewString()
 }

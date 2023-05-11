@@ -53,7 +53,7 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Description: "A name of a subject from which the connector should read.",
 		},
 		config.KeyConnectionName: {
-			Default:     "conduit-connection-<uuid>",
+			Default:     "",
 			Required:    false,
 			Description: "Optional connection name which will come in handy when it comes to monitoring.",
 		},

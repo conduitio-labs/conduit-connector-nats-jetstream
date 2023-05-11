@@ -18,6 +18,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/google/uuid"
 )
 
 func TestParse(t *testing.T) {
@@ -179,6 +181,24 @@ func TestParse(t *testing.T) {
 				URLs:           []string{"nats://127.0.0.1:1222"},
 				Subject:        "foo",
 				ConnectionName: "my_super_connection",
+				MaxReconnects:  DefaultMaxReconnects,
+				ReconnectWait:  DefaultReconnectWait,
+			},
+			wantErr: false,
+		},
+		{
+			name: "success, empty connection name",
+			args: args{
+				cfg: map[string]string{
+					KeyURLs:           "nats://127.0.0.1:1222",
+					KeySubject:        "foo",
+					KeyConnectionName: "",
+				},
+			},
+			want: Config{
+				URLs:           []string{"nats://127.0.0.1:1222"},
+				Subject:        "foo",
+				ConnectionName: DefaultConnectionNamePrefix + uuid.NewString(),
 				MaxReconnects:  DefaultMaxReconnects,
 				ReconnectWait:  DefaultReconnectWait,
 			},

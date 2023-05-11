@@ -52,7 +52,7 @@ func (d *Destination) Parameters() map[string]sdk.Parameter {
 			Description: "A name of a subject to which the connector should write.",
 		},
 		config.KeyConnectionName: {
-			Default:     "conduit-connection-<uuid>",
+			Default:     "",
 			Required:    false,
 			Description: "Optional connection name which will come in handy when it comes to monitoring.",
 		},
