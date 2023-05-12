@@ -31,7 +31,6 @@ type Source struct {
 
 	config   Config
 	iterator *jetstream.Iterator
-	errC     chan error
 }
 
 // NewSource creates new instance of the Source.
@@ -133,13 +132,12 @@ func (s *Source) Configure(_ context.Context, cfg map[string]string) error {
 	}
 
 	s.config = config
-	s.errC = make(chan error, 1)
 
 	return nil
 }
 
 // Open opens a connection to NATS and initializes iterators.
-func (s *Source) Open(_ context.Context, position sdk.Position) error {
+func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	opts, err := common.GetConnectionOptions(s.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %w", err)
@@ -150,10 +148,26 @@ func (s *Source) Open(_ context.Context, position sdk.Position) error {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
 
-	// register an error handler for async errors,
-	// the Source listens to them within the Read method and propagates the error if it occurs.
-	conn.SetErrorHandler(func(con *nats.Conn, sub *nats.Subscription, err error) {
-		s.errC <- err
+	// Async handlers & callbacks
+	conn.SetErrorHandler(func(c *nats.Conn, sub *nats.Subscription, err error) {
+		sdk.Logger(ctx).
+			Error().
+			Err(err).
+			Str("connection_name", c.Opts.Name).
+			Str("subscription", sub.Subject).
+			Msg("nats error")
+	})
+
+	conn.SetDisconnectErrHandler(func(c *nats.Conn, err error) {
+		sdk.Logger(ctx).Warn().Err(err).Str("connection_name", c.Opts.Name).Msg("disconnected from NATS server")
+	})
+
+	conn.SetReconnectHandler(func(c *nats.Conn) {
+		sdk.Logger(ctx).Warn().Str("connection_name", c.Opts.Name).Msg("reconnected to NATS server")
+	})
+
+	conn.SetClosedHandler(func(c *nats.Conn) {
+		sdk.Logger(ctx).Warn().Str("connection_name", c.Opts.Name).Msg("connection has been closed")
 	})
 
 	s.iterator, err = jetstream.NewIterator(jetstream.IteratorParams{
@@ -176,22 +190,16 @@ func (s *Source) Open(_ context.Context, position sdk.Position) error {
 // Read fetches a record from an iterator.
 // If there's no record will return sdk.ErrBackoffRetry.
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
-	select {
-	case err := <-s.errC:
-		return sdk.Record{}, fmt.Errorf("got an async error: %w", err)
-
-	default:
-		if !s.iterator.HasNext() {
-			return sdk.Record{}, sdk.ErrBackoffRetry
-		}
-
-		record, err := s.iterator.Next(ctx)
-		if err != nil {
-			return sdk.Record{}, fmt.Errorf("read next record: %w", err)
-		}
-
-		return record, nil
+	if !s.iterator.HasNext() {
+		return sdk.Record{}, sdk.ErrBackoffRetry
 	}
+
+	record, err := s.iterator.Next(ctx)
+	if err != nil {
+		return sdk.Record{}, fmt.Errorf("read next record: %w", err)
+	}
+
+	return record, nil
 }
 
 // Ack acknowledges a message at the given position.
