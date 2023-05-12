@@ -147,6 +147,7 @@ func (d *Destination) Open(ctx context.Context) error {
 	conn.SetDisconnectErrHandler(common.DisconnectErrCallback(ctx))
 	conn.SetReconnectHandler(common.ReconnectCallback(ctx))
 	conn.SetClosedHandler(common.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(common.DiscoveredServersCallback(ctx))
 
 	d.writer, err = jetstream.NewWriter(jetstream.WriterParams{
 		Conn:          conn,

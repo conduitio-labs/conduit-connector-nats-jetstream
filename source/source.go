@@ -153,6 +153,7 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	conn.SetDisconnectErrHandler(common.DisconnectErrCallback(ctx))
 	conn.SetReconnectHandler(common.ReconnectCallback(ctx))
 	conn.SetClosedHandler(common.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(common.DiscoveredServersCallback(ctx))
 
 	s.iterator, err = jetstream.NewIterator(jetstream.IteratorParams{
 		Conn:           conn,
