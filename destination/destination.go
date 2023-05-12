@@ -143,17 +143,10 @@ func (d *Destination) Open(ctx context.Context) error {
 			Msg("nats error")
 	})
 
-	conn.SetDisconnectErrHandler(func(c *nats.Conn, err error) {
-		sdk.Logger(ctx).Warn().Err(err).Str("connection_name", c.Opts.Name).Msg("disconnected from NATS server")
-	})
-
-	conn.SetReconnectHandler(func(c *nats.Conn) {
-		sdk.Logger(ctx).Warn().Str("connection_name", c.Opts.Name).Msg("reconnected to NATS server")
-	})
-
-	conn.SetClosedHandler(func(c *nats.Conn) {
-		sdk.Logger(ctx).Warn().Str("connection_name", c.Opts.Name).Msg("connection has been closed")
-	})
+	conn.SetErrorHandler(common.ErrorHandlerCallback(ctx))
+	conn.SetDisconnectErrHandler(common.DisconnectErrCallback(ctx))
+	conn.SetReconnectHandler(common.ReconnectCallback(ctx))
+	conn.SetClosedHandler(common.ClosedCallback(ctx))
 
 	d.writer, err = jetstream.NewWriter(jetstream.WriterParams{
 		Conn:          conn,
