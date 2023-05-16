@@ -122,7 +122,7 @@ func (d *Destination) Configure(_ context.Context, cfg map[string]string) error 
 }
 
 // Open makes sure everything is prepared to receive records.
-func (d *Destination) Open(context.Context) error {
+func (d *Destination) Open(ctx context.Context) error {
 	opts, err := common.GetConnectionOptions(d.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %s", err)
@@ -132,6 +132,22 @@ func (d *Destination) Open(context.Context) error {
 	if err != nil {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
+
+	// Async handlers & callbacks
+	conn.SetErrorHandler(func(c *nats.Conn, sub *nats.Subscription, err error) {
+		sdk.Logger(ctx).
+			Error().
+			Err(err).
+			Str("connection_name", c.Opts.Name).
+			Str("subscription", sub.Subject).
+			Msg("nats error")
+	})
+
+	conn.SetErrorHandler(common.ErrorHandlerCallback(ctx))
+	conn.SetDisconnectErrHandler(common.DisconnectErrCallback(ctx))
+	conn.SetReconnectHandler(common.ReconnectCallback(ctx))
+	conn.SetClosedHandler(common.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(common.DiscoveredServersCallback(ctx))
 
 	d.writer, err = jetstream.NewWriter(jetstream.WriterParams{
 		Conn:          conn,
