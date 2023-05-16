@@ -134,15 +134,6 @@ func (d *Destination) Open(ctx context.Context) error {
 	}
 
 	// Async handlers & callbacks
-	conn.SetErrorHandler(func(c *nats.Conn, sub *nats.Subscription, err error) {
-		sdk.Logger(ctx).
-			Error().
-			Err(err).
-			Str("connection_name", c.Opts.Name).
-			Str("subscription", sub.Subject).
-			Msg("nats error")
-	})
-
 	conn.SetErrorHandler(common.ErrorHandlerCallback(ctx))
 	conn.SetDisconnectErrHandler(common.DisconnectErrCallback(ctx))
 	conn.SetReconnectHandler(common.ReconnectCallback(ctx))
