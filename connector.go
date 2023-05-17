@@ -17,8 +17,8 @@
 package nats
 
 import (
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/destination"
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal/destination"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal/source"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 

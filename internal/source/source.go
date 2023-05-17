@@ -18,9 +18,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/common"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source/jetstream"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
@@ -30,7 +29,7 @@ type Source struct {
 	sdk.UnimplementedSource
 
 	config   Config
-	iterator *jetstream.Iterator
+	iterator *internal.Iterator
 }
 
 // NewSource creates new instance of the Source.
@@ -138,7 +137,7 @@ func (s *Source) Configure(_ context.Context, cfg map[string]string) error {
 
 // Open opens a connection to NATS and initializes iterators.
 func (s *Source) Open(ctx context.Context, position sdk.Position) error {
-	opts, err := common.GetConnectionOptions(s.config.Config)
+	opts, err := internal.GetConnectionOptions(s.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %w", err)
 	}
@@ -149,13 +148,13 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	}
 
 	// Async handlers & callbacks
-	conn.SetErrorHandler(common.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(common.DisconnectErrCallback(ctx))
-	conn.SetReconnectHandler(common.ReconnectCallback(ctx))
-	conn.SetClosedHandler(common.ClosedCallback(ctx))
-	conn.SetDiscoveredServersHandler(common.DiscoveredServersCallback(ctx))
+	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx))
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx))
+	conn.SetClosedHandler(internal.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
 
-	s.iterator, err = jetstream.NewIterator(jetstream.IteratorParams{
+	s.iterator, err = internal.NewIterator(ctx, internal.IteratorParams{
 		Conn:           conn,
 		BufferSize:     s.config.BufferSize,
 		Durable:        s.config.Durable,

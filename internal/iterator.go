@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jetstream
+package internal
 
 import (
 	"bytes"
@@ -33,12 +33,13 @@ const heartbeatTimeout = 2 * time.Second
 type Iterator struct {
 	sync.Mutex
 
-	conn          *nats.Conn
-	messages      chan *nats.Msg
-	unackMessages []*nats.Msg
-	jetstream     nats.JetStreamContext
-	consumerInfo  *nats.ConsumerInfo
-	subscription  *nats.Subscription
+	conn              *nats.Conn
+	messages          chan *nats.Msg
+	unackMessages     []*nats.Msg
+	jetstream         nats.JetStreamContext
+	consumerInfo      *nats.ConsumerInfo
+	subscription      *nats.Subscription
+	currentReconnects uint64
 }
 
 // IteratorParams contains incoming params for the NewIterator function.
@@ -54,7 +55,7 @@ type IteratorParams struct {
 }
 
 // getSubscribeOptions returns a NATS subscribe options based on the IteratorParams's fields.
-func (p IteratorParams) getSubscribeOptions() ([]nats.SubOpt, error) {
+func (p IteratorParams) getSubscribeOptions(ctx context.Context) ([]nats.SubOpt, error) {
 	var opts []nats.SubOpt
 
 	position, err := parsePosition(p.SDKPosition)
@@ -88,6 +89,7 @@ func (p IteratorParams) getSubscribeOptions() ([]nats.SubOpt, error) {
 	}
 
 	opts = append(opts,
+		nats.Context(ctx),
 		nats.Durable(p.Durable),
 		nats.ReplayInstant(),
 		nats.DeliverSubject(p.DeliverSubject),
@@ -99,13 +101,13 @@ func (p IteratorParams) getSubscribeOptions() ([]nats.SubOpt, error) {
 }
 
 // NewIterator creates new instance of the Iterator.
-func NewIterator(params IteratorParams) (*Iterator, error) {
+func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) {
 	jetstream, err := params.Conn.JetStream()
 	if err != nil {
 		return nil, fmt.Errorf("get jetstream context: %w", err)
 	}
 
-	subscribeOpts, err := params.getSubscribeOptions()
+	subscribeOpts, err := params.getSubscribeOptions(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get consumer options: %w", err)
 	}
@@ -122,12 +124,13 @@ func NewIterator(params IteratorParams) (*Iterator, error) {
 	}
 
 	return &Iterator{
-		conn:          params.Conn,
-		messages:      messages,
-		unackMessages: make([]*nats.Msg, 0),
-		jetstream:     jetstream,
-		consumerInfo:  consumerInfo,
-		subscription:  subscription,
+		conn:              params.Conn,
+		messages:          messages,
+		unackMessages:     make([]*nats.Msg, 0),
+		jetstream:         jetstream,
+		consumerInfo:      consumerInfo,
+		subscription:      subscription,
+		currentReconnects: params.Conn.Reconnects,
 	}, nil
 }
 
