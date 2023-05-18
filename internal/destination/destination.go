@@ -144,7 +144,14 @@ func (d *Destination) Open(ctx context.Context) error {
 
 	// Async handlers & callbacks
 	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {
+		if err := d.writer.Close(); err != nil {
+			sdk.Logger(ctx).
+				Error().
+				Err(err).
+				Msg("no able to close the destination writer (disconnect)")
+		}
+	}))
 	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
 		if err := d.Open(ctx); err != nil {
 			sdk.Logger(ctx).

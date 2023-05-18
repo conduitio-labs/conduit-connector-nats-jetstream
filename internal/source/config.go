@@ -46,6 +46,8 @@ const (
 	ConfigKeyBufferSize = "bufferSize"
 	// ConfigKeyDeliverSubject is a config name for a deliver subject.
 	ConfigKeyDeliverSubject = "deliverSubject"
+	// ConfigKeyStream is a config name for a stream name.
+	ConfigKeyStream = "stream"
 	// ConfigKeyDurable is a config name for a durable name.
 	ConfigKeyDurable = "durable"
 	// ConfigKeyDeliverPolicy is a config name for a message deliver policy.
@@ -59,6 +61,8 @@ type Config struct {
 	config.Config
 
 	BufferSize int `key:"bufferSize" validate:"omitempty,min=64"`
+	// Stream is the name of the Stream to be consumed
+	Stream string `key:"stream" validate:"required"`
 	// Durable is the name of the Consumer, if set will make a consumer durable,
 	// allowing resuming consumption where left off.
 	Durable string `key:"durable" validate:"required"`
@@ -81,6 +85,7 @@ func Parse(cfg map[string]string) (Config, error) {
 		Config:         common,
 		DeliverSubject: cfg[ConfigKeyDeliverSubject],
 		Durable:        cfg[ConfigKeyDurable],
+		Stream:         cfg[ConfigKeyStream],
 	}
 
 	if err := sourceConfig.parseBufferSize(cfg[ConfigKeyBufferSize]); err != nil {

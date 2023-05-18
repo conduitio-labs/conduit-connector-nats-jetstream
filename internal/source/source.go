@@ -45,6 +45,11 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Required:    true,
 			Description: "The connection URLs pointed to NATS instances.",
 		},
+		config.KeyStream: {
+			Default:     "",
+			Required:    true,
+			Description: "A name of a stream from which the connector should read.",
+		},
 		config.KeySubject: {
 			Default:     "",
 			Required:    true,
@@ -102,11 +107,11 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 		},
 		ConfigKeyDurable: {
 			Default:     "",
-			Required:    false,
+			Required:    true,
 			Description: "A consumer name.",
 		},
 		ConfigKeyDeliverSubject: {
-			Default:     "<durable>.conduit",
+			Default:     "<durable>.conduit", //FIXME it send the way that it is
 			Required:    false,
 			Description: "Specifies the JetStream consumer deliver subject.",
 		},
@@ -150,6 +155,7 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	s.iterator, err = NewIterator(ctx, IteratorParams{
 		Conn:           conn,
 		BufferSize:     s.config.BufferSize,
+		Stream:         s.config.Stream,
 		Durable:        s.config.Durable,
 		DeliverSubject: s.config.DeliverSubject,
 		Subject:        s.config.Subject,
@@ -163,14 +169,15 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 
 	// Async handlers & callbacks
 	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {
+		s.iterator.unAckAll()
+		s.iterator.jetstream.UpdateConsumer(s.iterator.params.Stream, &nats.ConsumerConfig{
+			OptStartSeq: 0,
+		})
+		// s.iterator.Stop()
+	}))
 	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
-		if err := s.Open(ctx, position); err != nil {
-			sdk.Logger(ctx).
-				Error().
-				Err(err).
-				Msg("no able to overwrite the iterator (reconnect)")
-		}
+		s.iterator, err = NewIterator(ctx, s.iterator.params)
 	}))
 	conn.SetClosedHandler(internal.ClosedCallback(ctx))
 	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
@@ -181,7 +188,7 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 // Read fetches a record from an iterator.
 // If there's no record will return sdk.ErrBackoffRetry.
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
-	if !s.iterator.HasNext() {
+	if !s.iterator.HasNext(ctx) {
 		return sdk.Record{}, sdk.ErrBackoffRetry
 	}
 
@@ -201,6 +208,12 @@ func (s *Source) Ack(_ context.Context, position sdk.Position) error {
 // Teardown closes connections, stops iterator.
 func (s *Source) Teardown(context.Context) error {
 	if s.iterator != nil {
+		s.iterator.params.Conn.SetReconnectHandler(nil)
+
+		if err := s.iterator.params.Conn.Drain(); err != nil {
+			return fmt.Errorf("not able to drain connection iterator: %w", err)
+		}
+
 		if err := s.iterator.Stop(); err != nil {
 			return fmt.Errorf("stop iterator: %w", err)
 		}
