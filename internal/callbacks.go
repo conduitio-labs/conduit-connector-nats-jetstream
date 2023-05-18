@@ -48,8 +48,9 @@ func DisconnectErrCallback(ctx context.Context) nats.ConnErrHandler {
 	}
 }
 
-func ReconnectCallback(ctx context.Context) nats.ConnHandler {
+func ReconnectCallback(ctx context.Context, extra nats.ConnHandler) nats.ConnHandler {
 	return func(c *nats.Conn) {
+		extra(c)
 		sdk.Logger(ctx).
 			Warn().
 			Str("connection_name", c.Opts.Name).

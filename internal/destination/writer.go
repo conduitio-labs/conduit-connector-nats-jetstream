@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package destination
 
 import (
 	"fmt"
@@ -26,7 +26,7 @@ import (
 // Writer implements a JetStream writer.
 // It writes messages asynchronously.
 type Writer struct {
-	sync.Mutex
+	mu sync.Mutex
 
 	conn        *nats.Conn
 	subject     string
@@ -89,4 +89,13 @@ func (w *Writer) Close() error {
 	}
 
 	return nil
+}
+
+// Reconnect rebuilds jetstream context
+func (w *Writer) Reconnect(conn *nats.Conn) (err error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	w.jetstream, err = conn.JetStream()
+	return
 }

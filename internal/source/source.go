@@ -29,7 +29,7 @@ type Source struct {
 	sdk.UnimplementedSource
 
 	config   Config
-	iterator *internal.Iterator
+	iterator *Iterator
 }
 
 // NewSource creates new instance of the Source.
@@ -147,14 +147,7 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
 
-	// Async handlers & callbacks
-	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx))
-	conn.SetReconnectHandler(internal.ReconnectCallback(ctx))
-	conn.SetClosedHandler(internal.ClosedCallback(ctx))
-	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
-
-	s.iterator, err = internal.NewIterator(ctx, internal.IteratorParams{
+	s.iterator, err = NewIterator(ctx, IteratorParams{
 		Conn:           conn,
 		BufferSize:     s.config.BufferSize,
 		Durable:        s.config.Durable,
@@ -167,6 +160,20 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	if err != nil {
 		return fmt.Errorf("init jetstream iterator: %w", err)
 	}
+
+	// Async handlers & callbacks
+	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx))
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
+		if err := s.Open(ctx, position); err != nil {
+			sdk.Logger(ctx).
+				Error().
+				Err(err).
+				Msg("no able to overwrite the iterator (reconnect)")
+		}
+	}))
+	conn.SetClosedHandler(internal.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
 
 	return nil
 }

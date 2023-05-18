@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package internal
+package source
 
 import (
 	"bytes"
@@ -31,12 +31,12 @@ const heartbeatTimeout = 2 * time.Second
 // Iterator is a iterator for JetStream communication model.
 // It receives message from NATS JetStream.
 type Iterator struct {
-	sync.Mutex
+	mu sync.Mutex
 
 	conn              *nats.Conn
+	jetstream         nats.JetStreamContext
 	messages          chan *nats.Msg
 	unackMessages     []*nats.Msg
-	jetstream         nats.JetStreamContext
 	consumerInfo      *nats.ConsumerInfo
 	subscription      *nats.Subscription
 	currentReconnects uint64
@@ -134,6 +134,15 @@ func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) 
 	}, nil
 }
 
+// Reconnect rebuilds jetstream context
+func (i *Iterator) Reconnect(conn *nats.Conn) (err error) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+
+	i.jetstream, err = conn.JetStream()
+	return
+}
+
 // HasNext checks is the iterator has messages.
 func (i *Iterator) HasNext() bool {
 	return len(i.messages) > 0
@@ -150,9 +159,9 @@ func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
 		}
 
 		if i.consumerInfo.Config.AckPolicy != nats.AckNonePolicy {
-			i.Lock()
+			i.mu.Lock()
 			i.unackMessages = append(i.unackMessages, msg)
-			i.Unlock()
+			i.mu.Unlock()
 		}
 
 		return sdkRecord, nil
@@ -169,13 +178,15 @@ func (i *Iterator) Ack(sdkPosition sdk.Position) error {
 		return nil
 	}
 
-	i.Lock()
-	defer i.Unlock()
+	i.mu.Lock()
+	defer i.mu.Unlock()
 
 	if err := i.canAck(sdkPosition); err != nil {
 		return fmt.Errorf("message cannot be acknowledged: %w", err)
 	}
 
+	// FIXME: Why only the first msg?
+	// FIXME: It is not an atomic operation that can hold multiple things to ack, but only ack one every time.
 	if err := i.unackMessages[0].Ack(); err != nil {
 		return fmt.Errorf("ack message: %w", err)
 	}

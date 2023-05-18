@@ -30,7 +30,7 @@ type Destination struct {
 	sdk.UnimplementedDestination
 
 	config Config
-	writer *internal.Writer
+	writer *Writer
 }
 
 // NewDestination creates new instance of the Destination.
@@ -132,14 +132,7 @@ func (d *Destination) Open(ctx context.Context) error {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
 
-	// Async handlers & callbacks
-	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx))
-	conn.SetReconnectHandler(internal.ReconnectCallback(ctx))
-	conn.SetClosedHandler(internal.ClosedCallback(ctx))
-	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
-
-	d.writer, err = internal.NewWriter(internal.WriterParams{
+	d.writer, err = NewWriter(WriterParams{
 		Conn:          conn,
 		Subject:       d.config.Subject,
 		RetryWait:     d.config.RetryWait,
@@ -148,6 +141,20 @@ func (d *Destination) Open(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("init jetstream writer: %w", err)
 	}
+
+	// Async handlers & callbacks
+	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx))
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
+		if err := d.Open(ctx); err != nil {
+			sdk.Logger(ctx).
+				Error().
+				Err(err).
+				Msg("no able to overwrite the destination writer (reconnect)")
+		}
+	}))
+	conn.SetClosedHandler(internal.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
 
 	return nil
 }
