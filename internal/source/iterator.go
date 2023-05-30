@@ -28,12 +28,18 @@ import (
 // fetchSize is always 1 because conduit expects only one Record
 const fetchSize = 1
 
+type jetstreamSubscriber interface {
+	PullSubscribe(subj, durable string, opts ...nats.SubOpt) (*nats.Subscription, error)
+	UpdateConsumer(stream string, cfg *nats.ConsumerConfig, opts ...nats.JSOpt) (*nats.ConsumerInfo, error)
+}
+
 // Iterator is a iterator for JetStream communication model.
 // It receives message from NATS JetStream.
 type Iterator struct {
 	mu sync.RWMutex
 
-	jetstream     nats.JetStreamContext
+	nc            natsClient
+	jetstream     jetstreamSubscriber
 	unackMessages map[uint64]*nats.Msg
 	subscription  *nats.Subscription
 	params        IteratorParams
@@ -41,7 +47,6 @@ type Iterator struct {
 
 // IteratorParams contains incoming params for the NewIterator function.
 type IteratorParams struct {
-	Conn           *nats.Conn
 	BufferSize     int
 	Stream         string
 	Durable        string
@@ -67,7 +72,7 @@ func (p IteratorParams) getSubscriberOpts(ctx context.Context) ([]nats.SubOpt, e
 		// add 1 to the sequence in order to skip the consumed message at this position
 		// and start consuming new messages
 		// deliverPolicy in this case will become a DeliverByStartSequencePolicy.
-		opts = append(opts, nats.StartSequence(position.OptSeq))
+		opts = append(opts, nats.StartSequence(position.OptSeq+1))
 	} else {
 		switch p.DeliverPolicy {
 		case nats.DeliverAllPolicy:
@@ -95,16 +100,17 @@ func (p IteratorParams) getSubscriberOpts(ctx context.Context) ([]nats.SubOpt, e
 }
 
 // NewIterator creates new instance of the Iterator.
-func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) {
+func NewIterator(ctx context.Context, nc natsClient, params IteratorParams) (*Iterator, error) {
 	i := &Iterator{
 		mu:     sync.RWMutex{},
 		params: params,
+		nc:     nc,
 	}
 
 	var err error
 	// i.messages = make(chan *nats.Msg, i.params.BufferSize)
 	i.unackMessages = make(map[uint64]*nats.Msg, i.params.BufferSize)
-	i.jetstream, err = i.params.Conn.JetStream()
+	i.jetstream, err = nc.JetStream()
 	if err != nil {
 		return nil, fmt.Errorf("get jetstream context: %w", err)
 	}
@@ -114,36 +120,17 @@ func NewIterator(ctx context.Context, params IteratorParams) (*Iterator, error) 
 		return nil, fmt.Errorf("get consumer options: %w", err)
 	}
 
-	// if _, err := i.jetstream.AddStream(&nats.StreamConfig{
-	// 	Name:     params.Stream,
-	// 	Subjects: []string{params.Subject},
-	// 	Storage:  nats.FileStorage,
-	// }); err != nil && err != nats.ErrStreamNameAlreadyInUse {
-	// 	return nil, fmt.Errorf("creting jetstream stream: %w", err)
-	// }
-
-	// if _, err := i.jetstream.AddConsumer(params.Stream, &nats.ConsumerConfig{
-	// 	Durable:       params.Durable,
-	// 	AckPolicy:     nats.AckExplicitPolicy,
-	// 	MaxWaiting:    params.BufferSize,
-	// 	MaxAckPending: params.BufferSize,
-	// }); err != nil && err != nats.ErrConsumerNameAlreadyInUse {
-	// 	return nil, fmt.Errorf("creting jetstream consumer: %w", err)
-	// }
-
 	i.subscription, err = i.jetstream.PullSubscribe(i.params.Subject, i.params.Durable, subscriberOpts...)
 	if err != nil || i.subscription == nil {
 		return nil, fmt.Errorf("pull subscribe: %w", err)
 	}
-
-	go i.status(ctx)
 
 	return i, nil
 }
 
 // HasNext checks is the iterator has messages.
 func (i *Iterator) HasNext(ctx context.Context) bool {
-	if !i.params.Conn.IsConnected() && !i.subscription.IsValid() {
+	if !i.nc.IsConnected() && !i.subscription.IsValid() {
 		return false
 	}
 
@@ -255,10 +242,6 @@ func (i *Iterator) Stop() (err error) {
 		return fmt.Errorf("not ack (when stopping): %w", err)
 	}
 
-	if i.params.Conn != nil {
-		i.params.Conn.Close()
-	}
-
 	return nil
 }
 
@@ -298,16 +281,4 @@ func (i *Iterator) getMessagePosition(msg *nats.Msg, metadata *nats.MsgMetadata)
 	}
 
 	return sdkPosition, nil
-}
-
-func (i *Iterator) status(ctx context.Context) {
-	t := time.NewTicker(time.Second * 10)
-
-	for {
-		<-t.C
-		if i.subscription != nil {
-			consumerInfo, _ := i.subscription.ConsumerInfo()
-			sdk.Logger(ctx).Debug().Interface("consumer_info", consumerInfo).Send()
-		}
-	}
 }

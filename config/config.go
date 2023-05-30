@@ -36,8 +36,6 @@ const (
 const (
 	// KeyURLs is a config name for a connection URLs.
 	KeyURLs = "urls"
-	// KeyStream is a config name for a stream.
-	KeyStream = "stream"
 	// KeySubject is a config name for a subject.
 	KeySubject = "subject"
 	// KeyConnectionName is a config name for a connection name.
@@ -62,7 +60,6 @@ const (
 // shared between source and destination NATS JetStream connector.
 type Config struct {
 	URLs    []string `key:"urls" validate:"required,dive,url"`
-	Stream  string   `key:"stream" validate:"required"`
 	Subject string   `key:"subject" validate:"required"`
 	// ConnectionName might come in handy when it comes to monitoring and so.
 	// See https://docs.nats.io/using-nats/developer/connecting/name.
@@ -90,7 +87,6 @@ type Config struct {
 func Parse(cfg map[string]string) (Config, error) {
 	config := Config{
 		URLs:                    strings.Split(cfg[KeyURLs], ","),
-		Stream:                  cfg[KeyStream],
 		Subject:                 cfg[KeySubject],
 		NKeyPath:                cfg[KeyNKeyPath],
 		CredentialsFilePath:     cfg[KeyCredentialsFilePath],

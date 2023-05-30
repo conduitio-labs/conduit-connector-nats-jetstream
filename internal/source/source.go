@@ -24,11 +24,19 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+type natsClient interface {
+	JetStream(...nats.JSOpt) (nats.JetStreamContext, error)
+	IsConnected() bool
+	Drain() error
+	Close()
+}
+
 // Source operates source logic.
 type Source struct {
 	sdk.UnimplementedSource
 
 	config   Config
+	nc       natsClient
 	iterator *Iterator
 }
 
@@ -45,7 +53,7 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Required:    true,
 			Description: "The connection URLs pointed to NATS instances.",
 		},
-		config.KeyStream: {
+		ConfigKeyStream: {
 			Default:     "",
 			Required:    true,
 			Description: "A name of a stream from which the connector should read.",
@@ -107,7 +115,7 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 		},
 		ConfigKeyDurable: {
 			Default:     "",
-			Required:    true,
+			Required:    false,
 			Description: "A consumer name.",
 		},
 		ConfigKeyDeliverSubject: {
@@ -151,9 +159,9 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	if err != nil {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
+	s.nc = conn
 
-	s.iterator, err = NewIterator(ctx, IteratorParams{
-		Conn:           conn,
+	s.iterator, err = NewIterator(ctx, s.nc, IteratorParams{
 		BufferSize:     s.config.BufferSize,
 		Stream:         s.config.Stream,
 		Durable:        s.config.Durable,
@@ -174,10 +182,9 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		s.iterator.jetstream.UpdateConsumer(s.iterator.params.Stream, &nats.ConsumerConfig{
 			OptStartSeq: 0,
 		})
-		// s.iterator.Stop()
 	}))
 	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
-		s.iterator, err = NewIterator(ctx, s.iterator.params)
+		s.iterator, err = NewIterator(ctx, conn, s.iterator.params)
 	}))
 	conn.SetClosedHandler(internal.ClosedCallback(ctx))
 	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
@@ -208,15 +215,12 @@ func (s *Source) Ack(_ context.Context, position sdk.Position) error {
 // Teardown closes connections, stops iterator.
 func (s *Source) Teardown(context.Context) error {
 	if s.iterator != nil {
-		s.iterator.params.Conn.SetReconnectHandler(nil)
-
-		if err := s.iterator.params.Conn.Drain(); err != nil {
-			return fmt.Errorf("not able to drain connection iterator: %w", err)
-		}
-
 		if err := s.iterator.Stop(); err != nil {
 			return fmt.Errorf("stop iterator: %w", err)
 		}
+
+		// closing nats connection
+		s.nc.Close()
 	}
 
 	return nil

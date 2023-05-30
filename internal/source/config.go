@@ -65,7 +65,7 @@ type Config struct {
 	Stream string `key:"stream" validate:"required"`
 	// Durable is the name of the Consumer, if set will make a consumer durable,
 	// allowing resuming consumption where left off.
-	Durable string `key:"durable" validate:"required"`
+	Durable string `key:"durable" validate:"omitempty"`
 	// DeliverSubject specifies the JetStream consumer deliver subject.
 	DeliverSubject string `json:"deliverSubject" validate:"required"`
 	// DeliverPolicy defines where in the stream the connector should start receiving messages.
