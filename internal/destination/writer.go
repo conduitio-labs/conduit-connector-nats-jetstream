@@ -91,7 +91,7 @@ func (w *Writer) Close() error {
 	return nil
 }
 
-// Reconnect rebuilds jetstream context
+// Reconnect rebuilds jetstream context.
 func (w *Writer) Reconnect(conn *nats.Conn) (err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
