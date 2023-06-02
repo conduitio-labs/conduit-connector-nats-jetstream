@@ -97,5 +97,6 @@ func (w *Writer) Reconnect(conn *nats.Conn) (err error) {
 	defer w.mu.Unlock()
 
 	w.jetstream, err = conn.JetStream()
+
 	return
 }
