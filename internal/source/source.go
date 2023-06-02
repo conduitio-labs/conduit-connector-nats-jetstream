@@ -119,7 +119,7 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Description: "A consumer name.",
 		},
 		ConfigKeyDeliverSubject: {
-			Default:     "<durable>.conduit", //FIXME it send the way that it is
+			Default:     "<durable>.conduit", // FIXME it send the way that it is
 			Required:    false,
 			Description: "Specifies the JetStream consumer deliver subject.",
 		},
