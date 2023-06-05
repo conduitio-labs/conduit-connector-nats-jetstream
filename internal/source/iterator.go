@@ -254,7 +254,7 @@ func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
 		return sdk.Record{}, fmt.Errorf("get message metadata: %w", err)
 	}
 
-	position, err := i.getMessagePosition(msg, metadata)
+	position, err := i.getMessagePosition(metadata)
 	if err != nil {
 		return sdk.Record{}, fmt.Errorf("get position: %w", err)
 	}
@@ -270,7 +270,7 @@ func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
 }
 
 // getMessagePosition returns a position of a message in the form of sdk.Position.
-func (i *Iterator) getMessagePosition(msg *nats.Msg, metadata *nats.MsgMetadata) (sdk.Position, error) {
+func (i *Iterator) getMessagePosition(metadata *nats.MsgMetadata) (sdk.Position, error) {
 	position := position{
 		OptSeq: metadata.Sequence.Consumer,
 	}
