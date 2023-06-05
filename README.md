@@ -23,7 +23,7 @@ Run `make test` to run all the unit and integration tests, which require Docker 
 
 ### Connection and authentication
 
-The NATS JetStream connector connects to a NATS server or a cluster with the required parameters `urls` and `subject`. For source connectors you will also need to set `stream` name and we recommend to set the `durable` name as well. If your NATS server has a configured authentication you can pass an authentication details in the connection URL. For example, for a token authentication the url will look like: `nats://mytoken@127.0.0.1:4222`, and for a username/password authentication: `nats://username:password@127.0.0.1:4222`. But if your server is using [NKey](https://docs.nats.io/using-nats/developer/connecting/nkey) or [Credentials file](https://docs.nats.io/using-nats/developer/connecting/creds) for authentication you must configure them via separate [configuration](#configuration) parameters.
+If your NATS server has a configured authentication you can pass an authentication details in the connection URL. For example, for a token authentication the url will look like: `nats://mytoken@127.0.0.1:4222`, and for a username/password authentication: `nats://username:password@127.0.0.1:4222`. But if your server is using [NKey](https://docs.nats.io/using-nats/developer/connecting/nkey) or [Credentials file](https://docs.nats.io/using-nats/developer/connecting/creds) for authentication you must configure them via separate [configuration](#configuration) parameters.
 
 ### Receiving messages
 
