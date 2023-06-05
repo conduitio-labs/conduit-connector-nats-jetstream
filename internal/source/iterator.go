@@ -25,7 +25,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// fetchSize is always 1 because conduit expects only one Record
+// fetchSize is always 1 because conduit expects only one Record.
 const fetchSize = 1
 
 type jetstreamSubscriber interface {
