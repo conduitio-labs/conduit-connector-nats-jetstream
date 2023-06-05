@@ -141,6 +141,7 @@ func (i *Iterator) HasNext(ctx context.Context) bool {
 			Err(err).
 			Interface("consumer_info", ci).
 			Send()
+
 		return false
 	}
 
@@ -225,6 +226,7 @@ func (i *Iterator) unAckAll() error {
 			return fmt.Errorf("not ack (when stopping): %w", err)
 		}
 	}
+
 	return nil
 }
 

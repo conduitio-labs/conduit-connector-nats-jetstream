@@ -178,10 +178,14 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	// Async handlers & callbacks
 	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
 	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {
-		s.iterator.unAckAll()
-		s.iterator.jetstream.UpdateConsumer(s.iterator.params.Stream, &nats.ConsumerConfig{
+		if err := s.iterator.unAckAll(); err != nil {
+			sdk.Logger(ctx).Error().Err(err).Send()
+		}
+		if _, err := s.iterator.jetstream.UpdateConsumer(s.iterator.params.Stream, &nats.ConsumerConfig{
 			OptStartSeq: 0,
-		})
+		}); err != nil {
+			sdk.Logger(ctx).Error().Err(err).Send()
+		}
 	}))
 	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
 		s.iterator, err = NewIterator(ctx, conn, s.iterator.params)
