@@ -274,7 +274,7 @@ func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
 // getMessagePosition returns a position of a message in the form of sdk.Position.
 func (i *Iterator) getMessagePosition(metadata *nats.MsgMetadata) (sdk.Position, error) {
 	position := position{
-		OptSeq: metadata.Sequence.Consumer,
+		OptSeq: metadata.Sequence.Stream,
 	}
 
 	sdkPosition, err := position.marshalSDKPosition()
