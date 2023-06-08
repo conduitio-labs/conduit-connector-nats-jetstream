@@ -144,22 +144,8 @@ func (d *Destination) Open(ctx context.Context) error {
 
 	// Async handlers & callbacks
 	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {
-		if err := d.writer.Close(); err != nil {
-			sdk.Logger(ctx).
-				Error().
-				Err(err).
-				Msg("no able to close the destination writer (disconnect)")
-		}
-	}))
-	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
-		if err := d.Open(ctx); err != nil {
-			sdk.Logger(ctx).
-				Error().
-				Err(err).
-				Msg("no able to overwrite the destination writer (reconnect)")
-		}
-	}))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {}))
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {}))
 	conn.SetClosedHandler(internal.ClosedCallback(ctx))
 	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
 

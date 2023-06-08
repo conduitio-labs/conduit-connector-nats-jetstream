@@ -35,9 +35,9 @@ func ErrorHandlerCallback(ctx context.Context) nats.ErrHandler {
 	}
 }
 
-func DisconnectErrCallback(ctx context.Context, extra nats.ConnHandler) nats.ConnErrHandler {
+func DisconnectErrCallback(ctx context.Context, callbackFn nats.ConnHandler) nats.ConnErrHandler {
 	return func(c *nats.Conn, err error) {
-		extra(c)
+		callbackFn(c)
 		sdk.Logger(ctx).
 			Warn().
 			Err(err).
@@ -49,9 +49,9 @@ func DisconnectErrCallback(ctx context.Context, extra nats.ConnHandler) nats.Con
 	}
 }
 
-func ReconnectCallback(ctx context.Context, extra nats.ConnHandler) nats.ConnHandler {
+func ReconnectCallback(ctx context.Context, callbackFn nats.ConnHandler) nats.ConnHandler {
 	return func(c *nats.Conn) {
-		extra(c)
+		callbackFn(c)
 		sdk.Logger(ctx).
 			Warn().
 			Str("connection_name", c.Opts.Name).

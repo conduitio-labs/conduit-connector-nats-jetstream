@@ -71,7 +71,7 @@ func NewWriter(params WriterParams) (*Writer, error) {
 
 // Write synchronously writes a record.
 func (w *Writer) Write(record sdk.Record) error {
-	_, err := w.jetstream.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
+	_, err := w.conn.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
 	if err != nil {
 		return fmt.Errorf("publish sync: %w", err)
 	}
