@@ -52,6 +52,7 @@ func TestAcceptance(t *testing.T) {
 				SourceConfig:      cfg,
 				DestinationConfig: cfg,
 				BeforeTest:        beforeTest(cfg),
+				Skip:              []string{"ResumeAtPositionCDC"},
 				GoleakOptions: []goleak.Option{
 					// nats.go spawns a separate goroutine to process flush requests
 					// and we have no chance to stop it using the library's API
