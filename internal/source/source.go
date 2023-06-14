@@ -18,19 +18,26 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/common"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/source/jetstream"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
+
+type natsClient interface {
+	JetStream(...nats.JSOpt) (nats.JetStreamContext, error)
+	IsConnected() bool
+	Drain() error
+	Close()
+}
 
 // Source operates source logic.
 type Source struct {
 	sdk.UnimplementedSource
 
 	config   Config
-	iterator *jetstream.Iterator
+	nc       natsClient
+	iterator *Iterator
 }
 
 // NewSource creates new instance of the Source.
@@ -45,6 +52,11 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Default:     "",
 			Required:    true,
 			Description: "The connection URLs pointed to NATS instances.",
+		},
+		ConfigKeyStream: {
+			Default:     "",
+			Required:    true,
+			Description: "A name of a stream from which the connector should read.",
 		},
 		config.KeySubject: {
 			Default:     "",
@@ -107,7 +119,7 @@ func (s *Source) Parameters() map[string]sdk.Parameter {
 			Description: "A consumer name.",
 		},
 		ConfigKeyDeliverSubject: {
-			Default:     "<durable>.conduit",
+			Default:     "<durable>.conduit", // FIXME it send the way that it is
 			Required:    false,
 			Description: "Specifies the JetStream consumer deliver subject.",
 		},
@@ -138,7 +150,7 @@ func (s *Source) Configure(_ context.Context, cfg map[string]string) error {
 
 // Open opens a connection to NATS and initializes iterators.
 func (s *Source) Open(ctx context.Context, position sdk.Position) error {
-	opts, err := common.GetConnectionOptions(s.config.Config)
+	opts, err := internal.GetConnectionOptions(s.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %w", err)
 	}
@@ -147,17 +159,11 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 	if err != nil {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
+	s.nc = conn
 
-	// Async handlers & callbacks
-	conn.SetErrorHandler(common.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(common.DisconnectErrCallback(ctx))
-	conn.SetReconnectHandler(common.ReconnectCallback(ctx))
-	conn.SetClosedHandler(common.ClosedCallback(ctx))
-	conn.SetDiscoveredServersHandler(common.DiscoveredServersCallback(ctx))
-
-	s.iterator, err = jetstream.NewIterator(jetstream.IteratorParams{
-		Conn:           conn,
+	s.iterator, err = NewIterator(ctx, s.nc, IteratorParams{
 		BufferSize:     s.config.BufferSize,
+		Stream:         s.config.Stream,
 		Durable:        s.config.Durable,
 		DeliverSubject: s.config.DeliverSubject,
 		Subject:        s.config.Subject,
@@ -169,13 +175,26 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		return fmt.Errorf("init jetstream iterator: %w", err)
 	}
 
+	// Async handlers & callbacks
+	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {
+		if err := s.iterator.unAckAll(); err != nil {
+			sdk.Logger(ctx).Error().Err(err).Send()
+		}
+	}))
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
+		s.iterator, err = NewIterator(ctx, conn, s.iterator.params)
+	}))
+	conn.SetClosedHandler(internal.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
+
 	return nil
 }
 
 // Read fetches a record from an iterator.
 // If there's no record will return sdk.ErrBackoffRetry.
 func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
-	if !s.iterator.HasNext() {
+	if !s.iterator.HasNext(ctx) {
 		return sdk.Record{}, sdk.ErrBackoffRetry
 	}
 
@@ -198,6 +217,9 @@ func (s *Source) Teardown(context.Context) error {
 		if err := s.iterator.Stop(); err != nil {
 			return fmt.Errorf("stop iterator: %w", err)
 		}
+
+		// closing nats connection
+		s.nc.Close()
 	}
 
 	return nil

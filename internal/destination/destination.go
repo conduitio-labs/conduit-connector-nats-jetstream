@@ -19,9 +19,8 @@ import (
 	"fmt"
 	"strings"
 
-	common "github.com/conduitio-labs/conduit-connector-nats-jetstream/common"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/destination/jetstream"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
@@ -31,7 +30,7 @@ type Destination struct {
 	sdk.UnimplementedDestination
 
 	config Config
-	writer *jetstream.Writer
+	writer *Writer
 }
 
 // NewDestination creates new instance of the Destination.
@@ -123,7 +122,7 @@ func (d *Destination) Configure(_ context.Context, cfg map[string]string) error 
 
 // Open makes sure everything is prepared to receive records.
 func (d *Destination) Open(ctx context.Context) error {
-	opts, err := common.GetConnectionOptions(d.config.Config)
+	opts, err := internal.GetConnectionOptions(d.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %s", err)
 	}
@@ -133,14 +132,7 @@ func (d *Destination) Open(ctx context.Context) error {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
 
-	// Async handlers & callbacks
-	conn.SetErrorHandler(common.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(common.DisconnectErrCallback(ctx))
-	conn.SetReconnectHandler(common.ReconnectCallback(ctx))
-	conn.SetClosedHandler(common.ClosedCallback(ctx))
-	conn.SetDiscoveredServersHandler(common.DiscoveredServersCallback(ctx))
-
-	d.writer, err = jetstream.NewWriter(jetstream.WriterParams{
+	d.writer, err = NewWriter(WriterParams{
 		Conn:          conn,
 		Subject:       d.config.Subject,
 		RetryWait:     d.config.RetryWait,
@@ -149,6 +141,13 @@ func (d *Destination) Open(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("init jetstream writer: %w", err)
 	}
+
+	// Async handlers & callbacks
+	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {}))
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {}))
+	conn.SetClosedHandler(internal.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
 
 	return nil
 }

@@ -138,6 +138,7 @@ func createTestJetStream(stream, subject string) (sdk.Source, error) {
 	err := source.Configure(context.Background(), map[string]string{
 		config.KeyURLs:    test.TestURL,
 		config.KeySubject: subject,
+		ConfigKeyStream:   stream,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("configure source: %v", err)

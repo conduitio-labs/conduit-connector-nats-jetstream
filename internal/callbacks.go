@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package internal
 
 import (
 	"context"
@@ -35,8 +35,9 @@ func ErrorHandlerCallback(ctx context.Context) nats.ErrHandler {
 	}
 }
 
-func DisconnectErrCallback(ctx context.Context) nats.ConnErrHandler {
+func DisconnectErrCallback(ctx context.Context, callbackFn nats.ConnHandler) nats.ConnErrHandler {
 	return func(c *nats.Conn, err error) {
+		callbackFn(c)
 		sdk.Logger(ctx).
 			Warn().
 			Err(err).
@@ -48,8 +49,9 @@ func DisconnectErrCallback(ctx context.Context) nats.ConnErrHandler {
 	}
 }
 
-func ReconnectCallback(ctx context.Context) nats.ConnHandler {
+func ReconnectCallback(ctx context.Context, callbackFn nats.ConnHandler) nats.ConnHandler {
 	return func(c *nats.Conn) {
+		callbackFn(c)
 		sdk.Logger(ctx).
 			Warn().
 			Str("connection_name", c.Opts.Name).

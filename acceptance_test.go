@@ -15,10 +15,10 @@
 package nats
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal/source"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
@@ -41,7 +41,8 @@ func (d driver) GenerateRecord(t *testing.T, operation sdk.Operation) sdk.Record
 //nolint:paralleltest // we don't need the paralleltest here
 func TestAcceptance(t *testing.T) {
 	cfg := map[string]string{
-		config.KeyURLs: test.TestURL,
+		config.KeyURLs:         test.TestURL,
+		source.ConfigKeyStream: "test",
 	}
 
 	sdk.AcceptanceTest(t, driver{
@@ -51,6 +52,7 @@ func TestAcceptance(t *testing.T) {
 				SourceConfig:      cfg,
 				DestinationConfig: cfg,
 				BeforeTest:        beforeTest(cfg),
+				Skip:              []string{},
 				GoleakOptions: []goleak.Option{
 					// nats.go spawns a separate goroutine to process flush requests
 					// and we have no chance to stop it using the library's API
@@ -71,7 +73,7 @@ func beforeTest(cfg map[string]string) func(t *testing.T) {
 		conn, err := test.GetTestConnection()
 		is.NoErr(err)
 
-		streamName := strings.ReplaceAll(uuid.New().String(), "-", "")
+		streamName := cfg[source.ConfigKeyStream] + "-" + uuid.New().String()
 		subject := t.Name() + uuid.New().String()
 
 		err = test.CreateTestStream(conn, streamName, []string{subject})

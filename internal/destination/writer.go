@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package jetstream
+package destination
 
 import (
 	"fmt"
-	"sync"
 	"time"
 
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -26,8 +25,6 @@ import (
 // Writer implements a JetStream writer.
 // It writes messages asynchronously.
 type Writer struct {
-	sync.Mutex
-
 	conn        *nats.Conn
 	subject     string
 	jetstream   nats.JetStreamContext
