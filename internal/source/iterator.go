@@ -57,7 +57,7 @@ type IteratorParams struct {
 	AckPolicy      nats.AckPolicy
 }
 
-// generateConsumerConfig returns a NATS subscribe options based on the IteratorParams's fields.
+// getSubscriberOpts returns a NATS subscribe options based on the IteratorParams's fields.
 func (p IteratorParams) getSubscriberOpts(ctx context.Context) ([]nats.SubOpt, error) {
 	var opts []nats.SubOpt
 
@@ -108,7 +108,6 @@ func NewIterator(ctx context.Context, nc natsClient, params IteratorParams) (*It
 	}
 
 	var err error
-	// i.messages = make(chan *nats.Msg, i.params.BufferSize)
 	i.unackMessages = make(map[uint64]*nats.Msg, i.params.BufferSize)
 	i.jetstream, err = nc.JetStream()
 	if err != nil {
