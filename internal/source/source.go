@@ -24,19 +24,12 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-type natsClient interface {
-	JetStream(...nats.JSOpt) (nats.JetStreamContext, error)
-	IsConnected() bool
-	Drain() error
-	Close()
-}
-
 // Source operates source logic.
 type Source struct {
 	sdk.UnimplementedSource
 
 	config   Config
-	nc       natsClient
+	nc       internal.NATSClient
 	iterator *Iterator
 }
 
@@ -212,15 +205,19 @@ func (s *Source) Ack(_ context.Context, position sdk.Position) error {
 }
 
 // Teardown closes connections, stops iterator.
-func (s *Source) Teardown(context.Context) error {
+func (s *Source) Teardown(ctx context.Context) error {
 	if s.iterator != nil {
 		if err := s.iterator.Stop(); err != nil {
-			return fmt.Errorf("stop iterator: %w", err)
+			return fmt.Errorf("stop source: %w", err)
 		}
-
-		// closing nats connection
-		s.nc.Close()
 	}
+
+	if err := s.nc.Drain(); err != nil {
+		return fmt.Errorf("stop source: %w", err)
+	}
+
+	// closing nats connection
+	s.nc.Close()
 
 	return nil
 }

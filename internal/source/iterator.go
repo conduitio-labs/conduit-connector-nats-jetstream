@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
@@ -38,7 +39,7 @@ type jetstreamSubscriber interface {
 type Iterator struct {
 	mu sync.RWMutex
 
-	nc            natsClient
+	nc            internal.NATSClient
 	jetstream     jetstreamSubscriber
 	unackMessages map[uint64]*nats.Msg
 	subscription  *nats.Subscription
@@ -100,7 +101,7 @@ func (p IteratorParams) getSubscriberOpts(ctx context.Context) ([]nats.SubOpt, e
 }
 
 // NewIterator creates new instance of the Iterator.
-func NewIterator(ctx context.Context, nc natsClient, params IteratorParams) (*Iterator, error) {
+func NewIterator(ctx context.Context, nc internal.NATSClient, params IteratorParams) (*Iterator, error) {
 	i := &Iterator{
 		mu:     sync.RWMutex{},
 		params: params,

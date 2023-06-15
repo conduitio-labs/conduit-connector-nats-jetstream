@@ -16,6 +16,7 @@ package destination
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -25,10 +26,13 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
+var ErrWriteUnavailable = errors.New("write: connection is not available")
+
 // Destination NATS Connector persists records to a NATS subject or stream.
 type Destination struct {
 	sdk.UnimplementedDestination
 
+	nc     internal.NATSClient
 	config Config
 	writer *Writer
 }
@@ -131,29 +135,43 @@ func (d *Destination) Open(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("connect to NATS: %w", err)
 	}
+	d.nc = conn
 
-	d.writer, err = NewWriter(WriterParams{
-		Conn:          conn,
-		Subject:       d.config.Subject,
-		RetryWait:     d.config.RetryWait,
-		RetryAttempts: d.config.RetryAttempts,
+	// Async handlers & callbacks
+	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {
+		d.writer.stopWrites()
+	}))
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
+		d.writer, err = NewWriter(writerParams{
+			nc:            d.nc,
+			subject:       d.config.Subject,
+			retryWait:     d.config.RetryWait,
+			retryAttempts: d.config.RetryAttempts,
+		})
+	}))
+	conn.SetClosedHandler(internal.ClosedCallback(ctx))
+	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
+
+	d.writer, err = NewWriter(writerParams{
+		nc:            d.nc,
+		subject:       d.config.Subject,
+		retryWait:     d.config.RetryWait,
+		retryAttempts: d.config.RetryAttempts,
 	})
 	if err != nil {
 		return fmt.Errorf("init jetstream writer: %w", err)
 	}
-
-	// Async handlers & callbacks
-	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {}))
-	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {}))
-	conn.SetClosedHandler(internal.ClosedCallback(ctx))
-	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
 
 	return nil
 }
 
 // Write writes a record into a Destination.
 func (d *Destination) Write(_ context.Context, records []sdk.Record) (int, error) {
+	if !d.nc.IsConnected() {
+		return -1, ErrWriteUnavailable
+	}
+
 	for i, record := range records {
 		if err := d.writer.Write(record); err != nil {
 			return i, fmt.Errorf("write: %w", err)
@@ -165,9 +183,14 @@ func (d *Destination) Write(_ context.Context, records []sdk.Record) (int, error
 
 // Teardown gracefully closes connections.
 func (d *Destination) Teardown(context.Context) error {
-	if d.writer != nil {
-		return d.writer.Close()
+	d.writer.stopWrites()
+
+	if err := d.nc.Drain(); err != nil {
+		return fmt.Errorf("stop destination: %w", err)
 	}
+
+	// closing nats connection
+	d.nc.Close()
 
 	return nil
 }

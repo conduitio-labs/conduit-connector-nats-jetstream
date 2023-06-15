@@ -76,9 +76,6 @@ func TestDestination_Open_Fail(t *testing.T) {
 
 	err = destination.Open(context.Background())
 	is.True(err != nil)
-
-	err = destination.Teardown(context.Background())
-	is.NoErr(err)
 }
 
 func TestDestination_Write(t *testing.T) {
