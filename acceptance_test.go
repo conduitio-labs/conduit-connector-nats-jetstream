@@ -52,13 +52,7 @@ func TestAcceptance(t *testing.T) {
 				SourceConfig:      cfg,
 				DestinationConfig: cfg,
 				BeforeTest:        beforeTest(cfg),
-				// TestDestination_Configure_RequiredParams calls teardown, but doesn't open the connection.
-				Skip: []string{
-					"TestDestination_Configure_RequiredParams",
-					"TestDestination_Configure_Success",
-					"TestSource_Configure_RequiredParams",
-					"TestSource_Configure_Success",
-				},
+				Skip:              []string{},
 				GoleakOptions: []goleak.Option{
 					// nats.go spawns a separate goroutine to process flush requests
 					// and we have no chance to stop it using the library's API

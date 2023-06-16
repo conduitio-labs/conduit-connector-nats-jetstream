@@ -71,7 +71,7 @@ func NewWriter(params writerParams) (*Writer, error) {
 		subject:     params.subject,
 		jetstream:   jetstream,
 		publishOpts: params.getPublishOptions(),
-		// canWrite:    atomic.Bool{},
+		canWrite:    atomic.Bool{},
 	}
 
 	w.startWrites()

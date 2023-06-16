@@ -149,6 +149,7 @@ func (d *Destination) Open(ctx context.Context) error {
 			retryWait:     d.config.RetryWait,
 			retryAttempts: d.config.RetryAttempts,
 		})
+		d.writer.startWrites()
 	}))
 	conn.SetClosedHandler(internal.ClosedCallback(ctx))
 	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
@@ -183,6 +184,10 @@ func (d *Destination) Write(_ context.Context, records []sdk.Record) (int, error
 
 // Teardown gracefully closes connections.
 func (d *Destination) Teardown(context.Context) error {
+	if d.nc == nil || d.writer == nil {
+		return nil
+	}
+
 	d.writer.stopWrites()
 
 	if err := d.nc.Drain(); err != nil {

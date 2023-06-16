@@ -206,10 +206,12 @@ func (s *Source) Ack(_ context.Context, position sdk.Position) error {
 
 // Teardown closes connections, stops iterator.
 func (s *Source) Teardown(ctx context.Context) error {
-	if s.iterator != nil {
-		if err := s.iterator.Stop(); err != nil {
-			return fmt.Errorf("stop source: %w", err)
-		}
+	if s.iterator == nil || s.nc == nil {
+		return nil
+	}
+
+	if err := s.iterator.Stop(); err != nil {
+		return fmt.Errorf("stop source: %w", err)
 	}
 
 	if err := s.nc.Drain(); err != nil {
