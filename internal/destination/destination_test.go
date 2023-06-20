@@ -16,9 +16,12 @@ package destination
 
 import (
 	"context"
+	"errors"
+	"sync/atomic"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	"github.com/nats-io/nats.go"
 )
 
 func TestDestination_Configure(t *testing.T) {
@@ -85,4 +88,105 @@ func TestDestination_Configure(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDestination_Teardown(t *testing.T) {
+	t.Parallel()
+
+	type args struct {
+		ctx context.Context
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		drainErr    error
+		drainCalled bool
+		closeCalled bool
+	}{
+		{
+			name: "Teardown works succefully",
+			args: args{
+				ctx: context.Background(),
+			},
+			drainErr:    nil,
+			drainCalled: true,
+			closeCalled: true,
+		},
+		{
+			name: "Drain can fail",
+			args: args{
+				ctx: context.Background(),
+			},
+			drainErr:    nats.ErrTimeout,
+			drainCalled: true,
+			closeCalled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			nm := &natsMock{
+				drainErr: tt.drainErr,
+			}
+			d := &Destination{
+				nc: nm,
+				writer: &Writer{
+					canWrite: atomic.Bool{},
+				},
+			}
+			d.writer.canWrite.Store(true)
+			err := d.Teardown(tt.args.ctx)
+
+			// Asserts
+
+			// writer
+			if d.writer.canWrite.Load() != false {
+				t.Errorf("Destination.Teardown() can write should be false")
+			}
+
+			// nats drain
+			if tt.drainCalled != nm.drainCalled {
+				t.Errorf("Destination.Teardown() nats Drain method was not called")
+			}
+			if tt.drainErr != nil && errors.Is(nm.drainErr, err) {
+				t.Errorf("Destination.Teardown() expected error = %v", err)
+				return
+			}
+
+			// nats close
+			if tt.closeCalled != nm.closeCalled {
+				t.Errorf("Destination.Teardown() nats Close method was not called")
+			}
+		})
+	}
+}
+
+type natsMock struct {
+	drainErr    error
+	drainCalled bool
+	closeCalled bool
+}
+
+func (m *natsMock) Drain() error {
+	m.drainCalled = true
+	if m.drainErr != nil {
+		return m.drainErr
+	}
+	return nil
+}
+
+func (m *natsMock) JetStream(...nats.JSOpt) (nats.JetStreamContext, error) {
+	return nil, nil
+}
+func (m *natsMock) IsConnected() bool {
+	return false
+}
+
+func (m *natsMock) Close() {
+	m.closeCalled = true
 }

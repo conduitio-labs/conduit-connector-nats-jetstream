@@ -26,7 +26,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-var ErrWriteUnavailable = errors.New("write: connection is not available")
+var errWriteUnavailable = errors.New("write: connection is not available")
 
 // Destination NATS Connector persists records to a NATS subject or stream.
 type Destination struct {
@@ -170,7 +170,7 @@ func (d *Destination) Open(ctx context.Context) error {
 // Write writes a record into a Destination.
 func (d *Destination) Write(_ context.Context, records []sdk.Record) (int, error) {
 	if !d.nc.IsConnected() {
-		return -1, ErrWriteUnavailable
+		return -1, errWriteUnavailable
 	}
 
 	for i, record := range records {
@@ -184,18 +184,18 @@ func (d *Destination) Write(_ context.Context, records []sdk.Record) (int, error
 
 // Teardown gracefully closes connections.
 func (d *Destination) Teardown(context.Context) error {
-	if d.nc == nil || d.writer == nil {
-		return nil
+	if d.writer != nil {
+		d.writer.stopWrites()
 	}
 
-	d.writer.stopWrites()
+	if d.nc != nil {
+		if err := d.nc.Drain(); err != nil {
+			return fmt.Errorf("teardown: %w", err)
+		}
 
-	if err := d.nc.Drain(); err != nil {
-		return fmt.Errorf("stop destination: %w", err)
+		// closing nats connection
+		d.nc.Close()
 	}
-
-	// closing nats connection
-	d.nc.Close()
 
 	return nil
 }

@@ -84,7 +84,7 @@ func (w *Writer) Write(record sdk.Record) error {
 	// not redundant with Destination.Write
 	// writes can become unavailable when processing multiple records
 	if !w.canWrite.Load() {
-		return ErrWriteUnavailable
+		return errWriteUnavailable
 	}
 
 	_, err := w.jetstream.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
