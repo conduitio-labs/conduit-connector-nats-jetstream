@@ -193,7 +193,6 @@ func (d *Destination) Teardown(context.Context) error {
 			return fmt.Errorf("teardown: %w", err)
 		}
 
-		// closing nats connection
 		d.nc.Close()
 	}
 

@@ -155,6 +155,7 @@ func TestDestination_Teardown(t *testing.T) {
 			}
 			if tt.drainErr != nil && errors.Is(nm.drainErr, err) {
 				t.Errorf("Destination.Teardown() expected error = %v", err)
+
 				return
 			}
 
@@ -177,6 +178,7 @@ func (m *natsMock) Drain() error {
 	if m.drainErr != nil {
 		return m.drainErr
 	}
+
 	return nil
 }
 

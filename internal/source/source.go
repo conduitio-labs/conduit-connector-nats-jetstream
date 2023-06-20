@@ -205,21 +205,21 @@ func (s *Source) Ack(_ context.Context, position sdk.Position) error {
 }
 
 // Teardown closes connections, stops iterator.
-func (s *Source) Teardown(ctx context.Context) error {
-	if s.iterator == nil || s.nc == nil {
-		return nil
+func (s *Source) Teardown(context.Context) error {
+	if s.iterator != nil {
+		if err := s.iterator.Stop(); err != nil {
+			return fmt.Errorf("stop source: %w", err)
+		}
 	}
 
-	if err := s.iterator.Stop(); err != nil {
-		return fmt.Errorf("stop source: %w", err)
-	}
+	if s.nc != nil {
+		if err := s.nc.Drain(); err != nil {
+			return fmt.Errorf("stop source: %w", err)
+		}
 
-	if err := s.nc.Drain(); err != nil {
-		return fmt.Errorf("stop source: %w", err)
+		// closing nats connection
+		s.nc.Close()
 	}
-
-	// closing nats connection
-	s.nc.Close()
 
 	return nil
 }

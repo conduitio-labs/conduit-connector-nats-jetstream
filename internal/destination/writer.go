@@ -95,12 +95,12 @@ func (w *Writer) Write(record sdk.Record) error {
 	return nil
 }
 
-// stopWrites to the NATS server
+// stopWrites to the NATS server.
 func (w *Writer) stopWrites() {
 	w.canWrite.Store(false)
 }
 
-// startWrites to the NATS server
+// startWrites to the NATS server.
 func (w *Writer) startWrites() {
 	w.canWrite.Store(true)
 }
