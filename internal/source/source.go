@@ -213,10 +213,6 @@ func (s *Source) Teardown(context.Context) error {
 	}
 
 	if s.nc != nil {
-		if err := s.nc.Drain(); err != nil {
-			return fmt.Errorf("stop source: %w", err)
-		}
-
 		// closing nats connection
 		s.nc.Close()
 	}

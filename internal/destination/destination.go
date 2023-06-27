@@ -189,10 +189,6 @@ func (d *Destination) Teardown(context.Context) error {
 	}
 
 	if d.nc != nil {
-		if err := d.nc.Drain(); err != nil {
-			return fmt.Errorf("teardown: %w", err)
-		}
-
 		d.nc.Close()
 	}
 

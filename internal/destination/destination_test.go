@@ -16,7 +16,6 @@ package destination
 
 import (
 	"context"
-	"errors"
 	"sync/atomic"
 	"testing"
 
@@ -100,8 +99,6 @@ func TestDestination_Teardown(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		drainErr    error
-		drainCalled bool
 		closeCalled bool
 	}{
 		{
@@ -109,18 +106,7 @@ func TestDestination_Teardown(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 			},
-			drainErr:    nil,
-			drainCalled: true,
 			closeCalled: true,
-		},
-		{
-			name: "Drain can fail",
-			args: args{
-				ctx: context.Background(),
-			},
-			drainErr:    nats.ErrTimeout,
-			drainCalled: true,
-			closeCalled: false,
 		},
 	}
 
@@ -130,9 +116,7 @@ func TestDestination_Teardown(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			nm := &natsMock{
-				drainErr: tt.drainErr,
-			}
+			nm := &natsMock{}
 			d := &Destination{
 				nc: nm,
 				writer: &Writer{
@@ -143,20 +127,13 @@ func TestDestination_Teardown(t *testing.T) {
 			err := d.Teardown(tt.args.ctx)
 
 			// Asserts
+			if err != nil {
+				t.Errorf("Destination.Teardown() unexpected error = %v", err)
+			}
 
 			// writer
 			if d.writer.canWrite.Load() != false {
 				t.Errorf("Destination.Teardown() can write should be false")
-			}
-
-			// nats drain
-			if tt.drainCalled != nm.drainCalled {
-				t.Errorf("Destination.Teardown() nats Drain method was not called")
-			}
-			if tt.drainErr != nil && errors.Is(nm.drainErr, err) {
-				t.Errorf("Destination.Teardown() expected error = %v", err)
-
-				return
 			}
 
 			// nats close
@@ -168,17 +145,10 @@ func TestDestination_Teardown(t *testing.T) {
 }
 
 type natsMock struct {
-	drainErr    error
-	drainCalled bool
 	closeCalled bool
 }
 
 func (m *natsMock) Drain() error {
-	m.drainCalled = true
-	if m.drainErr != nil {
-		return m.drainErr
-	}
-
 	return nil
 }
 
