@@ -170,7 +170,7 @@ func (d *Destination) Open(ctx context.Context) error {
 // Write writes a record into a Destination.
 func (d *Destination) Write(_ context.Context, records []sdk.Record) (int, error) {
 	if !d.nc.IsConnected() {
-		return -1, errWriteUnavailable
+		return 0, errWriteUnavailable
 	}
 
 	for i, record := range records {
