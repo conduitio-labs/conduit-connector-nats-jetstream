@@ -94,6 +94,8 @@ func TestDestination_Configure(t *testing.T) {
 }
 
 func TestDestination_Write(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		ctx          context.Context
 		cfg          map[string]string
@@ -207,6 +209,8 @@ func TestDestination_Write(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			mockPublisher := &mockJetstreamPublisher{
 				failedWrites: tt.args.failedWrites,
 			}
@@ -312,10 +316,11 @@ type mockJetstreamPublisher struct {
 	failedWrites int
 }
 
-func (m *mockJetstreamPublisher) Publish(subj string, data []byte, opts ...nats.PubOpt) (*nats.PubAck, error) {
+func (m *mockJetstreamPublisher) Publish(_ string, _ []byte, _ ...nats.PubOpt) (*nats.PubAck, error) {
 	m.totalWrites++
 	if m.failedWrites != 0 && m.totalWrites <= m.failedWrites {
 		return nil, errWriteUnavailable
 	}
+
 	return nil, nil
 }

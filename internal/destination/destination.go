@@ -189,6 +189,7 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 				}
 
 				time.Sleep(d.config.RetryWait)
+
 				continue
 			}
 			recorded++
