@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
@@ -27,6 +28,7 @@ import (
 )
 
 var errWriteUnavailable = errors.New("write: connection is not available")
+var errWriteUnavailableMaxRetries = errors.New("write: connection is not available: max retries excedded")
 
 // Destination NATS Connector persists records to a NATS subject or stream.
 type Destination struct {
@@ -168,14 +170,22 @@ func (d *Destination) Open(ctx context.Context) error {
 }
 
 // Write writes a record into a Destination.
-func (d *Destination) Write(_ context.Context, records []sdk.Record) (int, error) {
-	if !d.nc.IsConnected() {
-		return 0, errWriteUnavailable
-	}
+func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, error) {
+	timeout, cancel := context.WithTimeout(ctx, d.config.RetryWait*time.Duration(d.config.RetryAttempts))
+	defer cancel()
 
 	for i, record := range records {
-		if err := d.writer.Write(record); err != nil {
-			return i, fmt.Errorf("write: %w", err)
+		select {
+		case <-timeout.Done():
+			return 0, errWriteUnavailable
+		default:
+			if err := d.writer.Write(record); err != nil {
+				if i > d.config.RetryAttempts {
+					return 0, errWriteUnavailableMaxRetries
+				}
+
+				time.Sleep(d.config.RetryWait)
+			}
 		}
 	}
 
