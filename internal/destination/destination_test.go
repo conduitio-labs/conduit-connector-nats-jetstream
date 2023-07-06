@@ -16,10 +16,14 @@ package destination
 
 import (
 	"context"
+	"errors"
+	"math"
+	"strconv"
 	"sync/atomic"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
 
@@ -84,6 +88,146 @@ func TestDestination_Configure(t *testing.T) {
 				if err.Error() != tt.expectedErr {
 					t.Errorf("Destination.Configure() error = %s, wantErr %s", err.Error(), tt.expectedErr)
 				}
+			}
+		})
+	}
+}
+
+func TestDestination_Write(t *testing.T) {
+	type args struct {
+		ctx          context.Context
+		cfg          map[string]string
+		records      []sdk.Record
+		failedWrites int
+	}
+
+	tests := []struct {
+		name            string
+		args            args
+		expectedWritten int
+		expectedErr     error
+	}{
+		{
+			name: "Write works as expected",
+			args: args{
+				ctx: context.Background(),
+				cfg: map[string]string{
+					config.KeyURLs:         "nats://127.0.0.1:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "2",
+					ConfigKeyRetryWait:     "1s",
+				},
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+			},
+			expectedWritten: 1,
+		},
+		{
+			name: "failed writes can result in partial writes",
+			args: args{
+				ctx: context.Background(),
+				cfg: map[string]string{
+					config.KeyURLs:         "nats://127.0.0.1:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "1",
+					ConfigKeyRetryWait:     "1s",
+				},
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+				failedWrites: 1,
+			},
+			expectedWritten: 2,
+		},
+		{
+			name: "failed writes can result in zero writes",
+			args: args{
+				ctx: context.Background(),
+				cfg: map[string]string{
+					config.KeyURLs:         "nats://127.0.0.1:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "1",
+					ConfigKeyRetryWait:     "1s",
+				},
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+				failedWrites: 1,
+			},
+			expectedWritten: 0,
+			expectedErr:     errWriteTimeout,
+		},
+		{
+			name: "writes can timeout",
+			args: args{
+				ctx: context.Background(),
+				cfg: map[string]string{
+					config.KeyURLs:         "nats://127.0.0.1:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: strconv.FormatInt(math.MaxInt, 10),
+					ConfigKeyRetryWait:     "0s",
+				},
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+				failedWrites: 1,
+			},
+			expectedWritten: 0,
+			expectedErr:     errWriteTimeout,
+		},
+		{
+			name: "writes can return error and partial rewrites because the amount of attempts",
+			args: args{
+				ctx: context.Background(),
+				cfg: map[string]string{
+					config.KeyURLs:         "nats://127.0.0.1:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "1",
+					ConfigKeyRetryWait:     "1s",
+				},
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+				failedWrites: 4,
+			},
+			expectedWritten: 0,
+			expectedErr:     errWriteUnavailable,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			mockPublisher := &mockJetstreamPublisher{
+				failedWrites: tt.args.failedWrites,
+			}
+			d := &Destination{writer: &Writer{
+				canWrite:  atomic.Bool{},
+				publisher: mockPublisher,
+			}}
+			if err := d.Configure(tt.args.ctx, tt.args.cfg); err != nil {
+				t.Errorf("Destination.Configure() error = %s", err)
+			}
+			d.writer.startWrites()
+
+			written, err := d.Write(tt.args.ctx, tt.args.records)
+			if err != nil && tt.expectedErr == nil {
+				t.Errorf("Destination.Write() error = %s", err)
+			}
+			if err != nil && tt.expectedErr != nil && !errors.Is(err, tt.expectedErr) {
+				t.Errorf("Destination.Write() error = %s, wantErr %s", err.Error(), tt.expectedErr)
+			}
+			if written != tt.expectedWritten {
+				t.Errorf("Destination.Write() written = %d, wantWritten %d", written, tt.expectedWritten)
 			}
 		})
 	}
@@ -161,4 +305,17 @@ func (m *natsMock) IsConnected() bool {
 
 func (m *natsMock) Close() {
 	m.closeCalled = true
+}
+
+type mockJetstreamPublisher struct {
+	totalWrites  int
+	failedWrites int
+}
+
+func (m *mockJetstreamPublisher) Publish(subj string, data []byte, opts ...nats.PubOpt) (*nats.PubAck, error) {
+	m.totalWrites++
+	if m.failedWrites != 0 && m.totalWrites <= m.failedWrites {
+		return nil, errWriteUnavailable
+	}
+	return nil, nil
 }

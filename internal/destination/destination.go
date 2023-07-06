@@ -28,7 +28,7 @@ import (
 )
 
 var errWriteUnavailable = errors.New("write: connection is not available")
-var errWriteUnavailableMaxRetries = errors.New("write: connection is not available: max retries excedded")
+var errWriteTimeout = errors.New("write: timeout")
 
 // Destination NATS Connector persists records to a NATS subject or stream.
 type Destination struct {
@@ -174,22 +174,29 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 	timeout, cancel := context.WithTimeout(ctx, d.config.RetryWait*time.Duration(d.config.RetryAttempts))
 	defer cancel()
 
-	for i, record := range records {
+	attempts := 0
+	recorded := 0
+	for _, record := range records {
+		attempts++
+
 		select {
 		case <-timeout.Done():
-			return 0, errWriteUnavailable
+			return recorded, errWriteTimeout
 		default:
 			if err := d.writer.Write(record); err != nil {
-				if i > d.config.RetryAttempts {
-					return 0, errWriteUnavailableMaxRetries
+				if attempts > d.config.RetryAttempts {
+					return recorded, err
 				}
 
 				time.Sleep(d.config.RetryWait)
+				continue
 			}
+			recorded++
+			attempts = 0
 		}
 	}
 
-	return len(records), nil
+	return recorded, nil
 }
 
 // Teardown gracefully closes connections.

@@ -32,7 +32,7 @@ type jetstreamPublisher interface {
 // It writes messages asynchronously.
 type Writer struct {
 	subject     string
-	jetstream   jetstreamPublisher
+	publisher   jetstreamPublisher
 	publishOpts []nats.PubOpt
 	canWrite    atomic.Bool
 }
@@ -69,7 +69,7 @@ func NewWriter(params writerParams) (*Writer, error) {
 
 	w := &Writer{
 		subject:     params.subject,
-		jetstream:   jetstream,
+		publisher:   jetstream,
 		publishOpts: params.getPublishOptions(),
 		canWrite:    atomic.Bool{},
 	}
@@ -87,7 +87,7 @@ func (w *Writer) Write(record sdk.Record) error {
 		return errWriteUnavailable
 	}
 
-	_, err := w.jetstream.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
+	_, err := w.publisher.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
 	if err != nil {
 		return fmt.Errorf("publish sync: %w", err)
 	}

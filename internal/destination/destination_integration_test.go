@@ -78,7 +78,7 @@ func TestDestination_Open_Fail(t *testing.T) {
 	is.True(err != nil)
 }
 
-func TestDestination_Write(t *testing.T) {
+func TestIntegrationDestination_Write(t *testing.T) {
 	t.Parallel()
 
 	is := is.New(t)
