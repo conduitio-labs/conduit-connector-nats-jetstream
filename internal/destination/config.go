@@ -76,6 +76,10 @@ func (c *Config) parseFields(cfg map[string]string) error {
 			return fmt.Errorf("parse %q: %w", ConfigKeyRetryWait, err)
 		}
 
+		if retryWait == 0 {
+			retryWait = defaultRetryWait
+		}
+
 		c.RetryWait = retryWait
 	}
 
@@ -84,6 +88,10 @@ func (c *Config) parseFields(cfg map[string]string) error {
 		retryAttempts, err := strconv.Atoi(cfg[ConfigKeyRetryAttempts])
 		if err != nil {
 			return fmt.Errorf("parse %q: %w", ConfigKeyRetryAttempts, err)
+		}
+
+		if retryAttempts == 0 {
+			retryAttempts = defaultRetryAttempts
 		}
 
 		c.RetryAttempts = retryAttempts
