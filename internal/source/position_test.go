@@ -22,8 +22,6 @@ import (
 )
 
 func Test_position_marshalPosition(t *testing.T) {
-	t.Parallel()
-
 	tests := []struct {
 		name    string
 		fields  position
@@ -53,8 +51,6 @@ func Test_position_marshalPosition(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			p := position{
 				OptSeq: tt.fields.OptSeq,
 			}
@@ -74,8 +70,6 @@ func Test_position_marshalPosition(t *testing.T) {
 }
 
 func Test_parsePosition(t *testing.T) {
-	t.Parallel()
-
 	type args struct {
 		sdkPosition sdk.Position
 	}
@@ -135,8 +129,6 @@ func Test_parsePosition(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			got, err := parsePosition(tt.args.sdkPosition)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parsePosition() error = %v, wantErr %v", err, tt.wantErr)

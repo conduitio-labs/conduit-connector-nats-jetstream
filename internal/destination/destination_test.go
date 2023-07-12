@@ -28,8 +28,6 @@ import (
 )
 
 func TestDestination_Configure(t *testing.T) {
-	t.Parallel()
-
 	type args struct {
 		ctx context.Context
 		cfg map[string]string
@@ -75,8 +73,6 @@ func TestDestination_Configure(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			d := &Destination{}
 			if err := d.Configure(tt.args.ctx, tt.args.cfg); err != nil {
 				if tt.expectedErr == "" {
@@ -94,8 +90,6 @@ func TestDestination_Configure(t *testing.T) {
 }
 
 func TestDestination_Write(t *testing.T) {
-	t.Parallel()
-
 	type args struct {
 		cfg           map[string]string
 		records       []sdk.Record
@@ -223,8 +217,6 @@ func TestDestination_Write(t *testing.T) {
 		ctx := context.Background()
 
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			mockPublisher := &mockJetstreamPublisher{
 				failedWrites: tt.args.failedWrites,
 			}
@@ -259,8 +251,6 @@ func TestDestination_Write(t *testing.T) {
 }
 
 func TestDestination_Teardown(t *testing.T) {
-	t.Parallel()
-
 	type args struct {
 		ctx context.Context
 	}
@@ -283,8 +273,6 @@ func TestDestination_Teardown(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			nm := &natsMock{}
 			d := &Destination{
 				nc: nm,
