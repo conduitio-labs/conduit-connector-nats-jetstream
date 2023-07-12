@@ -25,9 +25,13 @@ var TestURL = "nats://127.0.0.1:4222"
 
 // GetTestConnection returns a connection to a test NATS server.
 func GetTestConnection() (*nats.Conn, error) {
-	conn, err := nats.Connect(TestURL)
+	conn, err := nats.Connect(TestURL, nats.Name("acceptance tests"))
 	if err != nil {
 		return nil, fmt.Errorf("connect to NATS server: %s", err)
+	}
+
+	if !conn.IsConnected() {
+		return nil, fmt.Errorf("is not connected to NATS server")
 	}
 
 	return conn, nil
