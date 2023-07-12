@@ -180,7 +180,19 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 		attempts++
 
 		select {
+		case <-ctx.Done():
+			sdk.Logger(ctx).Debug().
+				Int("record total", len(records)).
+				Int("record recorded", recorded).
+				Msg("write stopped by context before having all records recorded")
+
+			return recorded, nil
 		case <-timeout.Done():
+			sdk.Logger(ctx).Debug().
+				Int("record total", len(records)).
+				Int("record recorded", recorded).
+				Msg("write timeout")
+
 			return recorded, errWriteTimeout
 		default:
 			if err := d.writer.Write(record); err != nil {

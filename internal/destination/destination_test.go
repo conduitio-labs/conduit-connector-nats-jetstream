@@ -97,10 +97,10 @@ func TestDestination_Write(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		ctx          context.Context
-		cfg          map[string]string
-		records      []sdk.Record
-		failedWrites int
+		cfg           map[string]string
+		records       []sdk.Record
+		failedWrites  int
+		closedContext bool
 	}
 
 	tests := []struct {
@@ -112,7 +112,6 @@ func TestDestination_Write(t *testing.T) {
 		{
 			name: "Write works as expected",
 			args: args{
-				ctx: context.Background(),
 				cfg: map[string]string{
 					config.KeyURLs:         "nats://127.0.0.1:4222",
 					config.KeySubject:      "foo",
@@ -128,7 +127,6 @@ func TestDestination_Write(t *testing.T) {
 		{
 			name: "failed writes can result in partial writes",
 			args: args{
-				ctx: context.Background(),
 				cfg: map[string]string{
 					config.KeyURLs:         "nats://127.0.0.1:4222",
 					config.KeySubject:      "foo",
@@ -147,7 +145,6 @@ func TestDestination_Write(t *testing.T) {
 		{
 			name: "failed writes can result in zero writes",
 			args: args{
-				ctx: context.Background(),
 				cfg: map[string]string{
 					config.KeyURLs:         "nats://127.0.0.1:4222",
 					config.KeySubject:      "foo",
@@ -163,9 +160,26 @@ func TestDestination_Write(t *testing.T) {
 			expectedErr:     errWriteTimeout,
 		},
 		{
+			name: "context can be closed",
+			args: args{
+				closedContext: true,
+				cfg: map[string]string{
+					config.KeyURLs:         "nats://127.0.0.1:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "10",
+					ConfigKeyRetryWait:     "10s",
+				},
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+			},
+			expectedWritten: 0,
+			expectedErr:     nil,
+		},
+		{
 			name: "writes can timeout",
 			args: args{
-				ctx: context.Background(),
 				cfg: map[string]string{
 					config.KeyURLs:         "nats://127.0.0.1:4222",
 					config.KeySubject:      "foo",
@@ -186,7 +200,6 @@ func TestDestination_Write(t *testing.T) {
 		{
 			name: "writes can return error and partial rewrites because the amount of attempts",
 			args: args{
-				ctx: context.Background(),
 				cfg: map[string]string{
 					config.KeyURLs:         "nats://127.0.0.1:4222",
 					config.KeySubject:      "foo",
@@ -207,6 +220,7 @@ func TestDestination_Write(t *testing.T) {
 
 	for _, tt := range tests {
 		tt := tt
+		ctx := context.Background()
 
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -218,12 +232,19 @@ func TestDestination_Write(t *testing.T) {
 				canWrite:  atomic.Bool{},
 				publisher: mockPublisher,
 			}}
-			if err := d.Configure(tt.args.ctx, tt.args.cfg); err != nil {
+			if err := d.Configure(ctx, tt.args.cfg); err != nil {
 				t.Errorf("Destination.Configure() error = %s", err)
 			}
 			d.writer.startWrites()
 
-			written, err := d.Write(tt.args.ctx, tt.args.records)
+			if tt.args.closedContext {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithCancel(ctx)
+				cancel()
+				<-ctx.Done()
+			}
+
+			written, err := d.Write(ctx, tt.args.records)
 			if err != nil && tt.expectedErr == nil {
 				t.Errorf("Destination.Write() error = %s", err)
 			}

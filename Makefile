@@ -7,7 +7,7 @@ build:
 
 test:
 	docker-compose -f test/docker-compose.yml up --quiet-pull -d
-	go test $(GOTEST_FLAGS) ./...; ret=$$?; \
+	go test -v $(GOTEST_FLAGS) ./...; ret=$$?; \
 		docker-compose -f test/docker-compose.yml down; \
 		exit $$ret
 
