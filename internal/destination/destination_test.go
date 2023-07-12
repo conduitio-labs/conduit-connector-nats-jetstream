@@ -158,7 +158,7 @@ func TestDestination_Write(t *testing.T) {
 				},
 			},
 			expectedWritten: 0,
-			expectedErr:     errWriteUnavailable,
+			expectedErr:     context.Canceled,
 		},
 		{
 			name: "writes can return error and partial rewrites because the amount of attempts",

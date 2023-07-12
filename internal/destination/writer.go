@@ -15,6 +15,7 @@
 package destination
 
 import (
+	"errors"
 	"fmt"
 	"sync/atomic"
 	"time"
@@ -23,6 +24,8 @@ import (
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
+
+var errWriteUnavailable = errors.New("write: is unavailable")
 
 type jetstreamPublisher interface {
 	Publish(subj string, data []byte, opts ...nats.PubOpt) (*nats.PubAck, error)

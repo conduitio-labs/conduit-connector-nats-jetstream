@@ -16,7 +16,6 @@ package destination
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -26,8 +25,6 @@ import (
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
-
-var errWriteUnavailable = errors.New("write: is unavailable")
 
 // Destination NATS Connector persists records to a NATS subject or stream.
 type Destination struct {
@@ -178,18 +175,28 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 		select {
 		case <-ctx.Done():
 			err := ctx.Err()
+			// if the context error has not a cause, err will have a null value
+			if err == nil {
+				err = context.Canceled
+			}
 			sdk.Logger(ctx).Debug().
 				Int("record total", len(records)).
 				Int("record recorded", recorded).
 				Err(err).
 				Msg("write stopped by context before having all records recorded")
 
-			return recorded, nil
+			return recorded, err
 		default:
 			if err := d.writer.Write(record); err != nil {
 				if attempts > d.config.RetryAttempts {
 					return recorded, err
 				}
+
+				sdk.Logger(ctx).Debug().
+					Int("record total", len(records)).
+					Int("record recorded", recorded).
+					Err(err).
+					Send()
 
 				time.Sleep(d.config.RetryWait)
 
