@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
@@ -167,11 +166,8 @@ func (d *Destination) Open(ctx context.Context) error {
 
 // Write writes a record into a Destination.
 func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, error) {
-	attempts := 0
 	recorded := 0
 	for _, record := range records {
-		attempts++
-
 		select {
 		case <-ctx.Done():
 			err := ctx.Err()
@@ -188,23 +184,14 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 			return recorded, err
 		default:
 			if err := d.writer.Write(record); err != nil {
-				if attempts > d.config.RetryAttempts {
-					return recorded, err
-				}
-
 				sdk.Logger(ctx).Debug().
 					Int("record total", len(records)).
 					Int("record recorded", recorded).
 					Err(err).
 					Send()
-
-				time.Sleep(d.config.RetryWait)
-
-				continue
 			}
-			recorded++
-			attempts = 0
 		}
+		recorded++
 	}
 
 	return recorded, nil

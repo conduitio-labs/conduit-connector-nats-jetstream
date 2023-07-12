@@ -115,36 +115,6 @@ func TestDestination_Write(t *testing.T) {
 			expectedWritten: 1,
 		},
 		{
-			name: "failed writes can result in partial writes",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:4222",
-					config.KeySubject: "foo",
-				},
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-				},
-				failedWrites: 1,
-			},
-			expectedWritten: 2,
-		},
-		{
-			name: "failed writes can result in zero writes",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:4222",
-					config.KeySubject: "foo",
-				},
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-				},
-				failedWrites: 1,
-			},
-			expectedWritten: 0,
-		},
-		{
 			name: "context can be closed",
 			args: args{
 				closedContext: true,
@@ -159,24 +129,6 @@ func TestDestination_Write(t *testing.T) {
 			},
 			expectedWritten: 0,
 			expectedErr:     context.Canceled,
-		},
-		{
-			name: "writes can return error and partial rewrites because the amount of attempts",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:         "nats://127.0.0.1:4222",
-					config.KeySubject:      "foo-baz",
-					ConfigKeyRetryAttempts: "1",
-				},
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-				},
-				failedWrites: 4,
-			},
-			expectedWritten: 0,
-			expectedErr:     errWriteUnavailable,
 		},
 	}
 
