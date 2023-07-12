@@ -76,7 +76,7 @@ func (c *Config) parseFields(cfg map[string]string) error {
 			return fmt.Errorf("parse %q: %w", ConfigKeyRetryWait, err)
 		}
 
-		if retryWait == 0 {
+		if retryWait <= 0 {
 			retryWait = defaultRetryWait
 		}
 
@@ -90,7 +90,7 @@ func (c *Config) parseFields(cfg map[string]string) error {
 			return fmt.Errorf("parse %q: %w", ConfigKeyRetryAttempts, err)
 		}
 
-		if retryAttempts == 0 {
+		if retryAttempts <= 0 {
 			retryAttempts = defaultRetryAttempts
 		}
 
