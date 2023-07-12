@@ -27,8 +27,7 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-var errWriteUnavailable = errors.New("write: connection is not available")
-var errWriteTimeout = errors.New("write: timeout")
+var errWriteUnavailable = errors.New("write: is unavailable")
 
 // Destination NATS Connector persists records to a NATS subject or stream.
 type Destination struct {
@@ -171,9 +170,6 @@ func (d *Destination) Open(ctx context.Context) error {
 
 // Write writes a record into a Destination.
 func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, error) {
-	timeout, cancel := context.WithTimeout(ctx, d.config.RetryWait*time.Duration(d.config.RetryAttempts))
-	defer cancel()
-
 	attempts := 0
 	recorded := 0
 	for _, record := range records {
@@ -181,19 +177,14 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 
 		select {
 		case <-ctx.Done():
+			err := ctx.Err()
 			sdk.Logger(ctx).Debug().
 				Int("record total", len(records)).
 				Int("record recorded", recorded).
+				Err(err).
 				Msg("write stopped by context before having all records recorded")
 
 			return recorded, nil
-		case <-timeout.Done():
-			sdk.Logger(ctx).Debug().
-				Int("record total", len(records)).
-				Int("record recorded", recorded).
-				Msg("write timeout")
-
-			return recorded, errWriteTimeout
 		default:
 			if err := d.writer.Write(record); err != nil {
 				if attempts > d.config.RetryAttempts {

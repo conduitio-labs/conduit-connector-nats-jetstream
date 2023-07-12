@@ -17,8 +17,6 @@ package destination
 import (
 	"context"
 	"errors"
-	"math"
-	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -107,10 +105,8 @@ func TestDestination_Write(t *testing.T) {
 			name: "Write works as expected",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:         "nats://127.0.0.1:4222",
-					config.KeySubject:      "foo",
-					ConfigKeyRetryAttempts: "2",
-					ConfigKeyRetryWait:     "1s",
+					config.KeyURLs:    "nats://127.0.0.1:4222",
+					config.KeySubject: "foo",
 				},
 				records: []sdk.Record{
 					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
@@ -122,10 +118,8 @@ func TestDestination_Write(t *testing.T) {
 			name: "failed writes can result in partial writes",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:         "nats://127.0.0.1:4222",
-					config.KeySubject:      "foo",
-					ConfigKeyRetryAttempts: "1",
-					ConfigKeyRetryWait:     "1s",
+					config.KeyURLs:    "nats://127.0.0.1:4222",
+					config.KeySubject: "foo",
 				},
 				records: []sdk.Record{
 					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
@@ -140,10 +134,8 @@ func TestDestination_Write(t *testing.T) {
 			name: "failed writes can result in zero writes",
 			args: args{
 				cfg: map[string]string{
-					config.KeyURLs:         "nats://127.0.0.1:4222",
-					config.KeySubject:      "foo",
-					ConfigKeyRetryAttempts: "1",
-					ConfigKeyRetryWait:     "1s",
+					config.KeyURLs:    "nats://127.0.0.1:4222",
+					config.KeySubject: "foo",
 				},
 				records: []sdk.Record{
 					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
@@ -151,17 +143,14 @@ func TestDestination_Write(t *testing.T) {
 				failedWrites: 1,
 			},
 			expectedWritten: 0,
-			expectedErr:     errWriteTimeout,
 		},
 		{
 			name: "context can be closed",
 			args: args{
 				closedContext: true,
 				cfg: map[string]string{
-					config.KeyURLs:         "nats://127.0.0.1:4222",
-					config.KeySubject:      "foo",
-					ConfigKeyRetryAttempts: "10",
-					ConfigKeyRetryWait:     "10s",
+					config.KeyURLs:    "nats://127.0.0.1:4222",
+					config.KeySubject: "foo-bar",
 				},
 				records: []sdk.Record{
 					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
@@ -169,36 +158,15 @@ func TestDestination_Write(t *testing.T) {
 				},
 			},
 			expectedWritten: 0,
-			expectedErr:     nil,
-		},
-		{
-			name: "writes can timeout",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:         "nats://127.0.0.1:4222",
-					config.KeySubject:      "foo",
-					ConfigKeyRetryAttempts: strconv.FormatInt(math.MaxInt, 10),
-					ConfigKeyRetryWait:     "0s",
-				},
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-				},
-				failedWrites: 1,
-			},
-			expectedWritten: 0,
-			expectedErr:     errWriteTimeout,
+			expectedErr:     errWriteUnavailable,
 		},
 		{
 			name: "writes can return error and partial rewrites because the amount of attempts",
 			args: args{
 				cfg: map[string]string{
 					config.KeyURLs:         "nats://127.0.0.1:4222",
-					config.KeySubject:      "foo",
+					config.KeySubject:      "foo-baz",
 					ConfigKeyRetryAttempts: "1",
-					ConfigKeyRetryWait:     "1s",
 				},
 				records: []sdk.Record{
 					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
@@ -213,29 +181,28 @@ func TestDestination_Write(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		ctx := context.Background()
 
+		mockPublisher := &mockJetstreamPublisher{
+			failedWrites: tt.args.failedWrites,
+		}
+		d := &Destination{writer: &Writer{
+			canWrite:  atomic.Bool{},
+			publisher: mockPublisher,
+		}}
+		if err := d.Configure(ctx, tt.args.cfg); err != nil {
+			t.Errorf("Destination.Configure() error = %s", err)
+		}
+		d.writer.startWrites()
+
+		if tt.args.closedContext {
+			var cancel context.CancelCauseFunc
+			ctx, cancel = context.WithCancelCause(ctx)
+			cancel(context.Canceled)
+			<-ctx.Done()
+		}
+
 		t.Run(tt.name, func(t *testing.T) {
-			mockPublisher := &mockJetstreamPublisher{
-				failedWrites: tt.args.failedWrites,
-			}
-			d := &Destination{writer: &Writer{
-				canWrite:  atomic.Bool{},
-				publisher: mockPublisher,
-			}}
-			if err := d.Configure(ctx, tt.args.cfg); err != nil {
-				t.Errorf("Destination.Configure() error = %s", err)
-			}
-			d.writer.startWrites()
-
-			if tt.args.closedContext {
-				var cancel context.CancelFunc
-				ctx, cancel = context.WithCancel(ctx)
-				cancel()
-				<-ctx.Done()
-			}
-
 			written, err := d.Write(ctx, tt.args.records)
 			if err != nil && tt.expectedErr == nil {
 				t.Errorf("Destination.Write() error = %s", err)
