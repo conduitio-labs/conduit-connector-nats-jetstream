@@ -2,6 +2,8 @@
 
 VERSION=$(shell git describe --tags --dirty --always)
 
+all: lint test
+
 build:
 	go build -ldflags "-X 'github.com/conduitio-labs/conduit-connector-nats-jetstream.version=${VERSION}'" -o conduit-connector-nats-jetstream cmd/connector/main.go
 
