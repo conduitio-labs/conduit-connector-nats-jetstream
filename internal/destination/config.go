@@ -37,8 +37,8 @@ const (
 )
 
 var (
-	errNegativeRetryWait     = errors.New("DelayWait can't be a negative value")
-	errNegativeRetryAttempts = errors.New("DelayWait can't be a negative value")
+	errNegativeRetryWait     = errors.New("RetryWait can't be a negative value")
+	errNegativeRetryAttempts = errors.New("RetryAttempts can't be a negative value")
 )
 
 // Config holds destination specific configurable values.
