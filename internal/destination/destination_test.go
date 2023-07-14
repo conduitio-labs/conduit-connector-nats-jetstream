@@ -17,7 +17,6 @@ package destination
 import (
 	"context"
 	"errors"
-	"sync/atomic"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
@@ -89,7 +88,6 @@ func TestDestination_Configure(t *testing.T) {
 
 func TestDestination_Write(t *testing.T) {
 	type args struct {
-		cfg           map[string]string
 		records       []sdk.Record
 		failedWrites  int
 		closedContext bool
@@ -104,10 +102,6 @@ func TestDestination_Write(t *testing.T) {
 		{
 			name: "Write works as expected",
 			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:4222",
-					config.KeySubject: "foo",
-				},
 				records: []sdk.Record{
 					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
 				},
@@ -115,13 +109,20 @@ func TestDestination_Write(t *testing.T) {
 			expectedWritten: 1,
 		},
 		{
+			name: "Write can fail",
+			args: args{
+				failedWrites: 1,
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+			},
+			expectedWritten: 0,
+			expectedErr:     errors.New("an error"),
+		},
+		{
 			name: "context can be closed",
 			args: args{
 				closedContext: true,
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:4222",
-					config.KeySubject: "foo-bar",
-				},
 				records: []sdk.Record{
 					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
 					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
@@ -137,15 +138,11 @@ func TestDestination_Write(t *testing.T) {
 
 		mockPublisher := &mockJetstreamPublisher{
 			failedWrites: tt.args.failedWrites,
+			err:          tt.expectedErr,
 		}
 		d := &Destination{writer: &Writer{
-			canWrite:  atomic.Bool{},
 			publisher: mockPublisher,
 		}}
-		if err := d.Configure(ctx, tt.args.cfg); err != nil {
-			t.Errorf("Destination.Configure() error = %s", err)
-		}
-		d.writer.startWrites()
 
 		if tt.args.closedContext {
 			var cancel context.CancelCauseFunc
@@ -195,21 +192,12 @@ func TestDestination_Teardown(t *testing.T) {
 			nm := &natsMock{}
 			d := &Destination{
 				nc: nm,
-				writer: &Writer{
-					canWrite: atomic.Bool{},
-				},
 			}
-			d.writer.canWrite.Store(true)
 			err := d.Teardown(tt.args.ctx)
 
 			// Asserts
 			if err != nil {
 				t.Errorf("Destination.Teardown() unexpected error = %v", err)
-			}
-
-			// writer
-			if d.writer.canWrite.Load() != false {
-				t.Errorf("Destination.Teardown() can write should be false")
 			}
 
 			// nats close
@@ -242,12 +230,13 @@ func (m *natsMock) Close() {
 type mockJetstreamPublisher struct {
 	totalWrites  int
 	failedWrites int
+	err          error
 }
 
 func (m *mockJetstreamPublisher) Publish(_ string, _ []byte, _ ...nats.PubOpt) (*nats.PubAck, error) {
 	m.totalWrites++
 	if m.failedWrites != 0 && m.totalWrites <= m.failedWrites {
-		return nil, errWriteUnavailable
+		return nil, m.err
 	}
 
 	return nil, nil

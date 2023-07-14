@@ -136,9 +136,7 @@ func (d *Destination) Open(ctx context.Context) error {
 
 	// Async handlers & callbacks
 	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {
-		d.writer.stopWrites()
-	}))
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {}))
 	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
 		d.writer, err = NewWriter(writerParams{
 			nc:            d.nc,
@@ -146,7 +144,6 @@ func (d *Destination) Open(ctx context.Context) error {
 			retryWait:     d.config.RetryWait,
 			retryAttempts: d.config.RetryAttempts,
 		})
-		d.writer.startWrites()
 	}))
 	conn.SetClosedHandler(internal.ClosedCallback(ctx))
 	conn.SetDiscoveredServersHandler(internal.DiscoveredServersCallback(ctx))
@@ -179,7 +176,7 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 
 			return recorded, err
 		default:
-			if err := d.writer.Write(record); err != nil {
+			if err := d.writer.write(ctx, record); err != nil {
 				sdk.Logger(ctx).Debug().
 					Int("record total", len(records)).
 					Int("record recorded", recorded).
@@ -197,10 +194,6 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 
 // Teardown gracefully closes connections.
 func (d *Destination) Teardown(context.Context) error {
-	if d.writer != nil {
-		d.writer.stopWrites()
-	}
-
 	if d.nc != nil {
 		d.nc.Close()
 	}
