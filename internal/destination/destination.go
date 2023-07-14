@@ -171,10 +171,6 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 		select {
 		case <-ctx.Done():
 			err := ctx.Err()
-			// if the context error has not a cause, err will have a null value
-			if err == nil {
-				err = context.Canceled
-			}
 			sdk.Logger(ctx).Debug().
 				Int("record total", len(records)).
 				Int("record recorded", recorded).
@@ -189,6 +185,8 @@ func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, err
 					Int("record recorded", recorded).
 					Err(err).
 					Send()
+
+				return recorded, err
 			}
 		}
 		recorded++
