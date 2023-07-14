@@ -7,3 +7,6 @@ conduit-connector-nats-jetstream
 
 # testing stuff
 *.rest
+
+# do not vendor
+vendor/
