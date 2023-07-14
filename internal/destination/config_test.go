@@ -74,6 +74,27 @@ func TestParse(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "success, custom retry wait (zeroed)",
+			args: args{
+				cfg: map[string]string{
+					config.KeyURLs:     "nats://localhost:4222",
+					config.KeySubject:  "foo",
+					ConfigKeyRetryWait: "0s",
+				},
+			},
+			want: Config{
+				Config: config.Config{
+					URLs:          []string{"nats://localhost:4222"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
+				},
+				RetryWait:     defaultRetryWait,
+				RetryAttempts: defaultRetryAttempts,
+			},
+			wantErr: false,
+		},
+		{
 			name: "success, custom retry attempts",
 			args: args{
 				cfg: map[string]string{
@@ -95,6 +116,27 @@ func TestParse(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "success, custom retry attempts (zeroed)",
+			args: args{
+				cfg: map[string]string{
+					config.KeyURLs:         "nats://localhost:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "0",
+				},
+			},
+			want: Config{
+				Config: config.Config{
+					URLs:          []string{"nats://localhost:4222"},
+					Subject:       "foo",
+					MaxReconnects: config.DefaultMaxReconnects,
+					ReconnectWait: config.DefaultReconnectWait,
+				},
+				RetryWait:     defaultRetryWait,
+				RetryAttempts: 0,
+			},
+			wantErr: false,
+		},
+		{
 			name: "fail, invalid retry wait",
 			args: args{
 				cfg: map[string]string{
@@ -107,12 +149,36 @@ func TestParse(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "fail, invalid retry wait (negative)",
+			args: args{
+				cfg: map[string]string{
+					config.KeyURLs:     "nats://localhost:4222",
+					config.KeySubject:  "foo",
+					ConfigKeyRetryWait: "-1s",
+				},
+			},
+			want:    Config{},
+			wantErr: true,
+		},
+		{
 			name: "fail, invalid retry attempts",
 			args: args{
 				cfg: map[string]string{
 					config.KeyURLs:         "nats://localhost:4222",
 					config.KeySubject:      "foo",
 					ConfigKeyRetryAttempts: "wrong",
+				},
+			},
+			want:    Config{},
+			wantErr: true,
+		},
+		{
+			name: "fail, invalid retry attempts (negative)",
+			args: args{
+				cfg: map[string]string{
+					config.KeyURLs:         "nats://localhost:4222",
+					config.KeySubject:      "foo",
+					ConfigKeyRetryAttempts: "-1",
 				},
 			},
 			want:    Config{},

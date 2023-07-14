@@ -15,6 +15,7 @@
 package destination
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -28,13 +29,16 @@ const (
 	defaultRetryWait = time.Second * 5
 	// defaultRetryAttempts is the retry number of attempts when ErrNoResponders is encountered.
 	defaultRetryAttempts = 3
-)
 
-const (
 	// ConfigKeyRetryWait is a config name for a retry wait duration.
 	ConfigKeyRetryWait = "retryWait"
 	// ConfigKeyRetryAttempts is a config name for a retry attempts count.
 	ConfigKeyRetryAttempts = "retryAttempts"
+)
+
+var (
+	errNegativeRetryWait     = errors.New("DelayWait can't be a negative value")
+	errNegativeRetryAttempts = errors.New("DelayWait can't be a negative value")
 )
 
 // Config holds destination specific configurable values.
@@ -76,7 +80,11 @@ func (c *Config) parseFields(cfg map[string]string) error {
 			return fmt.Errorf("parse %q: %w", ConfigKeyRetryWait, err)
 		}
 
-		if retryWait <= 0 {
+		if retryWait < 0 {
+			return errNegativeRetryWait
+		}
+
+		if retryWait == 0 {
 			retryWait = defaultRetryWait
 		}
 
@@ -90,8 +98,8 @@ func (c *Config) parseFields(cfg map[string]string) error {
 			return fmt.Errorf("parse %q: %w", ConfigKeyRetryAttempts, err)
 		}
 
-		if retryAttempts <= 0 {
-			retryAttempts = defaultRetryAttempts
+		if retryAttempts < 0 {
+			return errNegativeRetryAttempts
 		}
 
 		c.RetryAttempts = retryAttempts
