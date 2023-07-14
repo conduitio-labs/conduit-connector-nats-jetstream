@@ -77,8 +77,8 @@ func NewWriter(params writerParams) (*Writer, error) {
 
 // Write synchronously writes a record.
 func (w *Writer) write(ctx context.Context, record sdk.Record) error {
-	w.publishOpts = append(w.publishOpts, nats.Context(ctx))
-	_, err := w.publisher.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
+	publishOpts := append(w.publishOpts, nats.Context(ctx))
+	_, err := w.publisher.Publish(w.subject, record.Payload.After.Bytes(), publishOpts...)
 	if err != nil {
 		return fmt.Errorf("publish sync: %w", err)
 	}
