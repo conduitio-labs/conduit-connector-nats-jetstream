@@ -16,14 +16,15 @@ package destination
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/nats-io/nats.go"
 )
 
 func TestDestination_Configure(t *testing.T) {
-	t.Parallel()
-
 	type args struct {
 		ctx context.Context
 		cfg map[string]string
@@ -69,8 +70,6 @@ func TestDestination_Configure(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			d := &Destination{}
 			if err := d.Configure(tt.args.ctx, tt.args.cfg); err != nil {
 				if tt.expectedErr == "" {
@@ -85,4 +84,160 @@ func TestDestination_Configure(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDestination_Write(t *testing.T) {
+	type args struct {
+		records       []sdk.Record
+		failedWrites  int
+		closedContext bool
+	}
+
+	tests := []struct {
+		name            string
+		args            args
+		expectedWritten int
+		expectedErr     error
+	}{
+		{
+			name: "Write works as expected",
+			args: args{
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+			},
+			expectedWritten: 1,
+		},
+		{
+			name: "Write can fail",
+			args: args{
+				failedWrites: 1,
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+			},
+			expectedWritten: 0,
+			expectedErr:     errors.New("an error"),
+		},
+		{
+			name: "context can be closed",
+			args: args{
+				closedContext: true,
+				records: []sdk.Record{
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				},
+			},
+			expectedWritten: 0,
+			expectedErr:     context.Canceled,
+		},
+	}
+
+	for _, tt := range tests {
+		ctx := context.Background()
+
+		mockPublisher := &mockJetstreamPublisher{
+			failedWrites: tt.args.failedWrites,
+			err:          tt.expectedErr,
+		}
+		d := &Destination{writer: &Writer{
+			publisher: mockPublisher,
+		}}
+
+		if tt.args.closedContext {
+			var cancel context.CancelCauseFunc
+			ctx, cancel = context.WithCancelCause(ctx)
+			cancel(context.Canceled)
+			<-ctx.Done()
+		}
+
+		t.Run(tt.name, func(t *testing.T) {
+			written, err := d.Write(ctx, tt.args.records)
+			if err != nil && tt.expectedErr == nil {
+				t.Errorf("Destination.Write() error = %s", err)
+			}
+			if err != nil && tt.expectedErr != nil && !errors.Is(err, tt.expectedErr) {
+				t.Errorf("Destination.Write() error = %s, wantErr %s", err.Error(), tt.expectedErr)
+			}
+			if written != tt.expectedWritten {
+				t.Errorf("Destination.Write() written = %d, wantWritten %d", written, tt.expectedWritten)
+			}
+		})
+	}
+}
+
+func TestDestination_Teardown(t *testing.T) {
+	type args struct {
+		ctx context.Context
+	}
+
+	tests := []struct {
+		name        string
+		args        args
+		closeCalled bool
+	}{
+		{
+			name: "Teardown works succefully",
+			args: args{
+				ctx: context.Background(),
+			},
+			closeCalled: true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+
+		t.Run(tt.name, func(t *testing.T) {
+			nm := &natsMock{}
+			d := &Destination{
+				nc: nm,
+			}
+			err := d.Teardown(tt.args.ctx)
+
+			// Asserts
+			if err != nil {
+				t.Errorf("Destination.Teardown() unexpected error = %v", err)
+			}
+
+			// nats close
+			if tt.closeCalled != nm.closeCalled {
+				t.Errorf("Destination.Teardown() nats Close method was not called")
+			}
+		})
+	}
+}
+
+type natsMock struct {
+	closeCalled bool
+}
+
+func (m *natsMock) Drain() error {
+	return nil
+}
+
+func (m *natsMock) JetStream(...nats.JSOpt) (nats.JetStreamContext, error) {
+	return nil, nil
+}
+func (m *natsMock) IsConnected() bool {
+	return false
+}
+
+func (m *natsMock) Close() {
+	m.closeCalled = true
+}
+
+type mockJetstreamPublisher struct {
+	totalWrites  int
+	failedWrites int
+	err          error
+}
+
+func (m *mockJetstreamPublisher) Publish(_ string, _ []byte, _ ...nats.PubOpt) (*nats.PubAck, error) {
+	m.totalWrites++
+	if m.failedWrites != 0 && m.totalWrites <= m.failedWrites {
+		return nil, m.err
+	}
+
+	return nil, nil
 }

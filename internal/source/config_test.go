@@ -24,8 +24,6 @@ import (
 )
 
 func TestParse(t *testing.T) {
-	t.Parallel()
-
 	type args struct {
 		cfg map[string]string
 	}
@@ -315,8 +313,6 @@ func TestParse(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			got, err := Parse(tt.args.cfg)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)

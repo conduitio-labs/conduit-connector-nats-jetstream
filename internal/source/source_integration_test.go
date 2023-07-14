@@ -28,8 +28,6 @@ import (
 )
 
 func TestSource_Open(t *testing.T) {
-	t.Parallel()
-
 	stream, subject := "mystreamoneopen", "foo_one_h"
 
 	source, err := createTestJetStream(stream, subject)
@@ -45,8 +43,6 @@ func TestSource_Open(t *testing.T) {
 }
 
 func TestSource_Read_JetStream_oneMessage(t *testing.T) {
-	t.Parallel()
-
 	stream, subject := "mystreamreadone", "foo_one"
 
 	source, err := createTestJetStream(stream, subject)
@@ -102,8 +98,6 @@ func TestSource_Read_JetStream_oneMessage(t *testing.T) {
 }
 
 func TestSource_Read_JetStream_backoffRetry(t *testing.T) {
-	t.Parallel()
-
 	stream, subject := "mystreamtwo", "foo_two"
 
 	source, err := createTestJetStream(stream, subject)

@@ -15,74 +15,73 @@
 package destination
 
 import (
+	"context"
 	"fmt"
 	"time"
 
+	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
 
+type jetstreamPublisher interface {
+	Publish(subj string, data []byte, opts ...nats.PubOpt) (*nats.PubAck, error)
+}
+
 // Writer implements a JetStream writer.
 // It writes messages asynchronously.
 type Writer struct {
-	conn        *nats.Conn
 	subject     string
-	jetstream   nats.JetStreamContext
+	publisher   jetstreamPublisher
 	publishOpts []nats.PubOpt
 }
 
-// WriterParams is an incoming params for the NewWriter function.
-type WriterParams struct {
-	Conn          *nats.Conn
-	Subject       string
-	RetryWait     time.Duration
-	RetryAttempts int
+// writerParams is an incoming params for the NewWriter function.
+type writerParams struct {
+	nc            internal.NATSClient
+	subject       string
+	retryWait     time.Duration
+	retryAttempts int
 }
 
 // getPublishOptions returns a NATS publish options based on the WriterParams's fields.
-func (p WriterParams) getPublishOptions() []nats.PubOpt {
+func (p writerParams) getPublishOptions() []nats.PubOpt {
 	var opts []nats.PubOpt
 
-	if p.RetryWait != 0 {
-		opts = append(opts, nats.RetryWait(p.RetryWait))
+	if p.retryWait != 0 {
+		opts = append(opts, nats.RetryWait(p.retryWait))
 	}
 
-	if p.RetryAttempts != 0 {
-		opts = append(opts, nats.RetryAttempts(p.RetryAttempts))
+	if p.retryAttempts != 0 {
+		opts = append(opts, nats.RetryAttempts(p.retryAttempts))
 	}
 
 	return opts
 }
 
 // NewWriter creates new instance of the Writer.
-func NewWriter(params WriterParams) (*Writer, error) {
-	jetstream, err := params.Conn.JetStream()
+func NewWriter(params writerParams) (*Writer, error) {
+	jetstream, err := params.nc.JetStream()
 	if err != nil {
 		return nil, fmt.Errorf("get jetstream context: %w", err)
 	}
 
-	return &Writer{
-		conn:        params.Conn,
-		subject:     params.Subject,
-		jetstream:   jetstream,
+	w := &Writer{
+		subject:     params.subject,
+		publisher:   jetstream,
 		publishOpts: params.getPublishOptions(),
-	}, nil
+	}
+
+	return w, nil
 }
 
 // Write synchronously writes a record.
-func (w *Writer) Write(record sdk.Record) error {
-	_, err := w.jetstream.Publish(w.subject, record.Payload.After.Bytes(), w.publishOpts...)
+func (w *Writer) write(ctx context.Context, record sdk.Record) error {
+	//nolint:golint,gocritic // false positive, the fix will create a memory leak
+	publishOpts := append(w.publishOpts, nats.Context(ctx))
+	_, err := w.publisher.Publish(w.subject, record.Bytes(), publishOpts...)
 	if err != nil {
 		return fmt.Errorf("publish sync: %w", err)
-	}
-
-	return nil
-}
-
-// Close closes the underlying NATS connection.
-func (w *Writer) Close() error {
-	if w.conn != nil {
-		w.conn.Close()
 	}
 
 	return nil

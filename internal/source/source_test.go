@@ -22,8 +22,6 @@ import (
 )
 
 func TestSource_Configure(t *testing.T) {
-	t.Parallel()
-
 	type args struct {
 		ctx context.Context
 		cfg map[string]string
@@ -70,8 +68,6 @@ func TestSource_Configure(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
 			s := &Source{}
 			if err := s.Configure(tt.args.ctx, tt.args.cfg); err != nil {
 				if tt.expectedErr == "" {

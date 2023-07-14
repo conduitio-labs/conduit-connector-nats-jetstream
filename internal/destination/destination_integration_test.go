@@ -25,8 +25,6 @@ import (
 )
 
 func TestDestination_Open_Success(t *testing.T) {
-	t.Parallel()
-
 	is := is.New(t)
 
 	conn, err := test.GetTestConnection()
@@ -54,8 +52,6 @@ func TestDestination_Open_Success(t *testing.T) {
 
 // TestDestination_Open_Fail should fail because of the wrong URL.
 func TestDestination_Open_Fail(t *testing.T) {
-	t.Parallel()
-
 	is := is.New(t)
 
 	conn, err := test.GetTestConnection()
@@ -76,14 +72,9 @@ func TestDestination_Open_Fail(t *testing.T) {
 
 	err = destination.Open(context.Background())
 	is.True(err != nil)
-
-	err = destination.Teardown(context.Background())
-	is.NoErr(err)
 }
 
-func TestDestination_Write(t *testing.T) {
-	t.Parallel()
-
+func TestIntegrationDestination_Write(t *testing.T) {
 	is := is.New(t)
 
 	conn, err := test.GetTestConnection()
