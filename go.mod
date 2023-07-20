@@ -3,7 +3,7 @@ module github.com/conduitio-labs/conduit-connector-nats-jetstream
 go 1.20
 
 require (
-	github.com/conduitio/conduit-connector-sdk v0.6.0
+	github.com/conduitio/conduit-connector-sdk v0.7.0
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/google/uuid v1.3.0
 	github.com/matryer/is v1.4.1
@@ -40,7 +40,7 @@ require (
 	github.com/nats-io/nkeys v0.4.4 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/run v1.1.0 // indirect
-	github.com/rs/zerolog v1.29.0 // indirect
+	github.com/rs/zerolog v1.29.1 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
