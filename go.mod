@@ -7,7 +7,7 @@ require (
 	github.com/go-playground/validator/v10 v10.15.4
 	github.com/google/uuid v1.4.0
 	github.com/matryer/is v1.4.1
-	github.com/nats-io/nats.go v1.30.0
+	github.com/nats-io/nats.go v1.31.0
 	go.uber.org/goleak v1.2.1
 	go.uber.org/multierr v1.11.0
 )
@@ -36,7 +36,6 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.0 // indirect
-	github.com/nats-io/nats-server/v2 v2.8.4 // indirect
 	github.com/nats-io/nkeys v0.4.5 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oklog/run v1.1.0 // indirect
@@ -47,7 +46,7 @@ require (
 	golang.org/x/exp v0.0.0-20221114191408-850992195362 // indirect
 	golang.org/x/net v0.10.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/genproto v0.0.0-20230110181048-76db0878b65f // indirect
 	google.golang.org/grpc v1.53.0 // indirect
