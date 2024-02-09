@@ -170,12 +170,12 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 
 	// Async handlers & callbacks
 	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(*nats.Conn) {
 		if err := s.iterator.unAckAll(); err != nil {
 			sdk.Logger(ctx).Error().Err(err).Send()
 		}
 	}))
-	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(*nats.Conn) {
 		s.iterator, err = NewIterator(ctx, conn, s.iterator.params)
 	}))
 	conn.SetClosedHandler(internal.ClosedCallback(ctx))
