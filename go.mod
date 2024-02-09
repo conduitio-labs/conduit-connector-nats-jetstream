@@ -6,7 +6,7 @@ require (
 	github.com/conduitio/conduit-connector-sdk v0.8.0
 	github.com/go-playground/validator/v10 v10.17.0
 	github.com/golangci/golangci-lint v1.56.1
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/matryer/is v1.4.1
 	github.com/nats-io/nats.go v1.32.0
 	go.uber.org/goleak v1.3.0
