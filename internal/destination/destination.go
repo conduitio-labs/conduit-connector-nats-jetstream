@@ -136,8 +136,8 @@ func (d *Destination) Open(ctx context.Context) error {
 
 	// Async handlers & callbacks
 	conn.SetErrorHandler(internal.ErrorHandlerCallback(ctx))
-	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(c *nats.Conn) {}))
-	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(c *nats.Conn) {
+	conn.SetDisconnectErrHandler(internal.DisconnectErrCallback(ctx, func(*nats.Conn) {}))
+	conn.SetReconnectHandler(internal.ReconnectCallback(ctx, func(*nats.Conn) {
 		d.writer, err = NewWriter(writerParams{
 			nc:            d.nc,
 			subject:       d.config.Subject,
