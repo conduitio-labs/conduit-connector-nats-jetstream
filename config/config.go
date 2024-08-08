@@ -15,107 +15,67 @@
 package config
 
 import (
-	"fmt"
-	"strconv"
+	"errors"
+	"net/url"
+	"os"
 	"strings"
 	"time"
-
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/validator"
-	"github.com/google/uuid"
-)
-
-const (
-	// DefaultConnectionNamePrefix is the default connection name prefix.
-	DefaultConnectionNamePrefix = "conduit-connection-"
-	// DefaultMaxReconnects is the default max reconnects count.
-	DefaultMaxReconnects = 5
-	// DefaultReconnectWait is the default reconnect wait timeout.
-	DefaultReconnectWait = time.Second * 5
-)
-
-const (
-	// KeyURLs is a config name for a connection URLs.
-	KeyURLs = "urls"
-	// KeySubject is a config name for a subject.
-	KeySubject = "subject"
-	// KeyConnectionName is a config name for a connection name.
-	KeyConnectionName = "connectionName"
-	// KeyNKeyPath is a config name for a path pointed to a NKey pair.
-	KeyNKeyPath = "nkeyPath"
-	// KeyCredentialsFilePath is config name for a path pointed to a credentials file.
-	KeyCredentialsFilePath = "credentialsFilePath"
-	// KeyTLSClientCertPath is a config name for a path pointed to a TLS client certificate.
-	KeyTLSClientCertPath = "tls.clientCertPath"
-	// KeyTLSClientPrivateKeyPath is a config name for a path pointed to a TLS client private key.
-	KeyTLSClientPrivateKeyPath = "tls.clientPrivateKeyPath"
-	// KeyTLSRootCACertPath is a config name for a path pointed to a TLS root certificate.
-	KeyTLSRootCACertPath = "tls.rootCACertPath"
-	// KeyMaxReconnects is a config name for a max reconnects.
-	KeyMaxReconnects = "maxReconnects"
-	// KeyReconnectWait is a config name for reconnect wait duration.
-	KeyReconnectWait = "reconnectWait"
 )
 
 // Config contains configurable values
 // shared between source and destination NATS JetStream connector.
 type Config struct {
-	URLs    []string `json:"urls" validate:"required,dive,url"`
-	Subject string   `json:"subject" validate:"required"`
-	// ConnectionName might come in handy when it comes to monitoring and so.
+	// URLs defines connection URLs.
+	URLs []string `json:"urls" validate:"required"`
+	// Subject is the subject name.
+	Subject string `json:"subject" validate:"required"`
+	// ConnectionName is the name of the connection that the connector establishes.
+	// Setting the connection is useful when monitoring the connector.
+	// The default value is the connector ID.
 	// See https://docs.nats.io/using-nats/developer/connecting/name.
 	ConnectionName string `json:"connectionName"`
+	// NKeyPath is the path to an NKey.
 	// See https://docs.nats.io/using-nats/developer/connecting/nkey.
-	NKeyPath string `json:"nkeyPath" validate:"omitempty,file"`
+	NKeyPath string `json:"nkeyPath"`
+	// CredentialsFilePath is the path to a credentials file.
 	// See https://docs.nats.io/using-nats/developer/connecting/creds.
-	CredentialsFilePath string `json:"credentialsFilePath" validate:"omitempty,file"`
-	// Optional parameters for a TLS encrypted connection.
-	// For more details see https://docs.nats.io/using-nats/developer/connecting/tls.
-	TLSClientCertPath string `json:"tls.clientCertPath" validate:"required_with=TLSClientPrivateKeyPath,omitempty,file"`
-	//nolint:lll // "validate" tag can be pretty verbose
-	TLSClientPrivateKeyPath string `json:"tls.clientPrivateKeyPath" validate:"required_with=TLSClientCertPath,omitempty,file"`
-	TLSRootCACertPath       string `json:"tls.rootCACertPath" validate:"omitempty,file"`
-	// MaxReconnect sets the number of reconnect attempts that will be
+	CredentialsFilePath string `json:"credentialsFilePath"`
+	// MaxReconnects sets the number of reconnect attempts that will be
 	// tried before giving up. If negative, then it will never give up
 	// trying to reconnect.
-	MaxReconnects int `json:"maxReconnects"`
-	// ReconnectWait sets the time to backoff after attempting a reconnect
-	// to a server that we were already connected to previously.
-	ReconnectWait time.Duration `json:"reconnectWait"`
+	MaxReconnects int `json:"maxReconnects" default:"5"`
+	// ReconnectWait is the wait time between reconnect attempts.
+	ReconnectWait time.Duration `json:"reconnectWait" default:"5s"`
+
+	ConfigTLS
 }
 
-// Parse maps the incoming map to the Config and validates it.
-func Parse(cfg map[string]string) (Config, error) {
-	config := Config{
-		URLs:                    strings.Split(cfg[KeyURLs], ","),
-		Subject:                 cfg[KeySubject],
-		NKeyPath:                cfg[KeyNKeyPath],
-		CredentialsFilePath:     cfg[KeyCredentialsFilePath],
-		TLSClientCertPath:       cfg[KeyTLSClientCertPath],
-		TLSClientPrivateKeyPath: cfg[KeyTLSClientPrivateKeyPath],
-		TLSRootCACertPath:       cfg[KeyTLSRootCACertPath],
-		MaxReconnects:           DefaultMaxReconnects,
-		ReconnectWait:           DefaultReconnectWait,
+func (c *Config) Validate() error {
+	var errs []error
+
+	// Validate URLs
+	for _, urlStr := range c.URLs {
+		if _, err := url.ParseRequestURI(urlStr); err != nil {
+			errs = append(errs, err)
+		}
 	}
 
-	if connectionName, ok := cfg[KeyConnectionName]; ok && connectionName != "" {
-		config.ConnectionName = connectionName
-	} else {
-		config.ConnectionName = generateConnectionName()
+	// Validate NKeyPath
+	if _, err := os.Stat(c.NKeyPath); err != nil {
+		errs = append(errs, err)
 	}
 
-	if err := config.parseMaxReconnects(cfg[KeyMaxReconnects]); err != nil {
-		return Config{}, fmt.Errorf("parse max reconnects: %w", err)
+	// Validate CredentialsFilePath
+	if _, err := os.Stat(c.CredentialsFilePath); err != nil {
+		errs = append(errs, err)
 	}
 
-	if err := config.parseReconnectWait(cfg[KeyReconnectWait]); err != nil {
-		return Config{}, fmt.Errorf("parse reconnect wait: %w", err)
+	// Validate TLS configuration
+	if err := c.ConfigTLS.Validate(); err != nil {
+		errs = append(errs, err)
 	}
 
-	if err := validator.Validate(&config); err != nil {
-		return Config{}, fmt.Errorf("validate config: %w", err)
-	}
-
-	return config, nil
+	return errors.Join(errs...)
 }
 
 // ToURL joins the Config's URLs strings together and returns them as one string.
@@ -123,38 +83,29 @@ func (c *Config) ToURL() string {
 	return strings.Join(c.URLs, ",")
 }
 
-// parseMaxReconnects parses the maxReconnects string and
-// if it's not empty set cfg.MaxReconnects to its integer representation.
-func (c *Config) parseMaxReconnects(maxReconnectsStr string) error {
-	if maxReconnectsStr != "" {
-		maxReconnects, err := strconv.Atoi(maxReconnectsStr)
-		if err != nil {
-			return fmt.Errorf("\"%s\" must be an integer", KeyMaxReconnects)
-		}
-
-		c.MaxReconnects = maxReconnects
-	}
-
-	return nil
+type ConfigTLS struct {
+	// TLSClientCertPath is the path to a client certificate.
+	// For more details see https://docs.nats.io/using-nats/developer/connecting/tls.
+	TLSClientCertPath string `json:"tls.clientCertPath"`
+	// TLSClientPrivateKeyPath is the path to a private key.
+	// For more details see https://docs.nats.io/using-nats/developer/connecting/tls.
+	TLSClientPrivateKeyPath string `json:"tls.clientPrivateKeyPath"`
+	// TLSRootCACertPath is the path to a root CA certificate.
+	TLSRootCACertPath string `json:"tls.rootCACertPath"`
 }
 
-// parseReconnectWait parses the reconnectWait string and
-// if it's not empty set cfg.ReconnectWait to its time.Duration representation.
-func (c *Config) parseReconnectWait(reconnectWaitStr string) error {
-	if reconnectWaitStr != "" {
-		reconnectWait, err := time.ParseDuration(reconnectWaitStr)
-		if err != nil {
-			return fmt.Errorf("\"%s\" must be a valid duration", KeyReconnectWait)
-		}
-
-		c.ReconnectWait = reconnectWait
+func (cfg ConfigTLS) Validate() error {
+	switch {
+	case cfg.TLSClientCertPath == "" && cfg.TLSClientPrivateKeyPath == "":
+		// Both fields are empty, this is valid, so return nil.
+		return nil
+	case cfg.TLSClientCertPath != "" && cfg.TLSClientPrivateKeyPath != "":
+		// Both fields are non-empty, this is valid, so return nil.
+		return nil
+	case cfg.TLSClientCertPath == "":
+		return errors.New("TLSClientCertPath is missing")
+	case cfg.TLSClientPrivateKeyPath == "":
+		return errors.New("TLSClientPrivateKeyPath is missing")
 	}
-
 	return nil
-}
-
-// generateConnectionName generates a random connection name.
-// The connection name will be made up of the default connection name and a random UUID.
-func generateConnectionName() string {
-	return DefaultConnectionNamePrefix + uuid.NewString()
 }

@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+
 package source
 
 import (
@@ -19,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/conduitio/conduit-commons/opencdc"
 	"testing"
 	"time"
 
@@ -75,7 +78,7 @@ func TestSource_Read_JetStream_oneMessage(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	var record sdk.Record
+	var record opencdc.Record
 	for {
 		record, err = source.Read(ctx)
 		if err != nil {

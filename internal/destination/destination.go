@@ -12,14 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate paramgen -output=paramgen.go Config
+
 package destination
 
 import (
 	"context"
 	"fmt"
+	"github.com/conduitio/conduit-commons/config"
+	"github.com/conduitio/conduit-commons/opencdc"
 	"strings"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
@@ -39,84 +42,26 @@ func NewDestination() sdk.Destination {
 	return sdk.DestinationWithMiddleware(&Destination{}, sdk.DefaultDestinationMiddleware()...)
 }
 
-func (d *Destination) Parameters() map[string]sdk.Parameter {
-	return map[string]sdk.Parameter{
-		config.KeyURLs: {
-			Default:     "",
-			Required:    true,
-			Description: "The connection URLs pointed to NATS instances.",
-		},
-		config.KeySubject: {
-			Default:     "",
-			Required:    true,
-			Description: "A name of a subject to which the connector should write.",
-		},
-		config.KeyConnectionName: {
-			Default:     "",
-			Required:    false,
-			Description: "Optional connection name which will come in handy when it comes to monitoring.",
-		},
-		config.KeyNKeyPath: {
-			Default:     "",
-			Required:    false,
-			Description: "A path pointed to a NKey pair.",
-		},
-		config.KeyCredentialsFilePath: {
-			Default:     "",
-			Required:    false,
-			Description: "A path pointed to a credentials file.",
-		},
-		config.KeyTLSClientCertPath: {
-			Default:  "",
-			Required: false,
-			//nolint:lll // long description
-			Description: "A path pointed to a TLS client certificate, must be present if tls.clientPrivateKeyPath field is also present.",
-		},
-		config.KeyTLSClientPrivateKeyPath: {
-			Default:  "",
-			Required: false,
-			//nolint:lll // long description
-			Description: "A path pointed to a TLS client private key, must be present if tls.clientCertPath field is also present.",
-		},
-		config.KeyTLSRootCACertPath: {
-			Default:     "",
-			Required:    false,
-			Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",
-		},
-		config.KeyMaxReconnects: {
-			Default:  "5",
-			Required: false,
-			Description: "Sets the number of reconnect attempts " +
-				"that will be tried before giving up. If negative, " +
-				"then it will never give up trying to reconnect.",
-		},
-		config.KeyReconnectWait: {
-			Default:  "5s",
-			Required: false,
-			Description: "Sets the time to backoff after attempting a reconnect " +
-				"to a server that we were already connected to previously.",
-		},
-		ConfigKeyRetryWait: {
-			Default:     "5s",
-			Required:    false,
-			Description: "Sets the timeout to wait for a message to be resent, if send fails.",
-		},
-		ConfigKeyRetryAttempts: {
-			Default:     "3",
-			Required:    false,
-			Description: "Sets a numbers of attempts to send a message, if send fails.",
-		},
-	}
+func (d *Destination) Parameters() config.Parameters {
+	return Config{}.Parameters()
 }
 
 // Configure parses and initializes the config.
-func (d *Destination) Configure(_ context.Context, cfg map[string]string) error {
-	config, err := Parse(cfg)
-	if err != nil {
-		return fmt.Errorf("parse config: %w", err)
+func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
+	if cfg["connectionName"] == "" {
+		// todo get connector ID from ctx
+		cfg["connectionName"] = "connector-id"
 	}
 
-	d.config = config
+	err := sdk.Util.ParseConfig(ctx, cfg, &d.config, NewDestination().Parameters())
+	if err != nil {
+		return err
+	}
+
+	err = d.config.Validate()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -162,7 +107,7 @@ func (d *Destination) Open(ctx context.Context) error {
 }
 
 // Write writes a record into a Destination.
-func (d *Destination) Write(ctx context.Context, records []sdk.Record) (int, error) {
+func (d *Destination) Write(ctx context.Context, records []opencdc.Record) (int, error) {
 	recorded := 0
 	for _, record := range records {
 		select {

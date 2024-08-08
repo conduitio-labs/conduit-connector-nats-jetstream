@@ -12,15 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+
 package destination
 
 import (
 	"context"
+	"github.com/conduitio/conduit-commons/opencdc"
 	"testing"
 
-	config "github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	test "github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
-	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/matryer/is"
 )
 
@@ -38,8 +39,8 @@ func TestDestination_Open_Success(t *testing.T) {
 	destination := NewDestination()
 
 	err = destination.Configure(context.Background(), map[string]string{
-		config.KeyURLs:    test.TestURL,
-		config.KeySubject: "foo_destination_success",
+		"urls":    test.TestURL,
+		"subject": "foo_destination_success",
 	})
 	is.NoErr(err)
 
@@ -65,8 +66,8 @@ func TestDestination_Open_Fail(t *testing.T) {
 	destination := NewDestination()
 
 	err = destination.Configure(context.Background(), map[string]string{
-		config.KeyURLs:    "nats://localhost:6666",
-		config.KeySubject: "foo_destination_fail",
+		"urls":    "nats://localhost:6666",
+		"subject": "foo_destination_fail",
 	})
 	is.NoErr(err)
 
@@ -76,6 +77,7 @@ func TestDestination_Open_Fail(t *testing.T) {
 
 func TestIntegrationDestination_Write(t *testing.T) {
 	is := is.New(t)
+	ctx := context.Background()
 
 	conn, err := test.GetTestConnection()
 	is.NoErr(err)
@@ -87,26 +89,26 @@ func TestIntegrationDestination_Write(t *testing.T) {
 
 	destination := NewDestination()
 
-	err = destination.Configure(context.Background(), map[string]string{
-		config.KeyURLs:    test.TestURL,
-		config.KeySubject: "foo_destination_write_jetstream",
+	err = destination.Configure(ctx, map[string]string{
+		"urls":    test.TestURL,
+		"subject": "foo_destination_write_jetstream",
 	})
 	is.NoErr(err)
 
-	err = destination.Open(context.Background())
+	err = destination.Open(ctx)
 	is.NoErr(err)
 
 	var written int
-	written, err = destination.Write(context.Background(), []sdk.Record{
+	written, err = destination.Write(ctx, []opencdc.Record{
 		{
-			Payload: sdk.Change{
-				After: sdk.RawData([]byte("hello")),
+			Payload: opencdc.Change{
+				After: opencdc.RawData([]byte("hello")),
 			},
 		},
 	})
 	is.NoErr(err)
 	is.Equal(written, 1)
 
-	err = destination.Teardown(context.Background())
+	err = destination.Teardown(ctx)
 	is.NoErr(err)
 }
