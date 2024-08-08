@@ -45,8 +45,8 @@ var (
 type Config struct {
 	config.Config
 
-	RetryWait     time.Duration `key:"retryWait"`
-	RetryAttempts int           `key:"retryAttempts"`
+	RetryWait     time.Duration `json:"retryWait"`
+	RetryAttempts int           `json:"retryAttempts"`
 }
 
 // Parse maps the incoming map to the Config and validates it.

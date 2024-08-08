@@ -3,6 +3,7 @@ module github.com/conduitio-labs/conduit-connector-nats-jetstream
 go 1.22.2
 
 require (
+	github.com/conduitio/conduit-commons v0.2.0
 	github.com/conduitio/conduit-connector-sdk v0.9.1
 	github.com/go-playground/validator/v10 v10.22.0
 	github.com/golangci/golangci-lint v1.59.1
@@ -49,7 +50,6 @@ require (
 	github.com/charithe/durationcheck v0.0.10 // indirect
 	github.com/chavacava/garif v0.1.0 // indirect
 	github.com/ckaznocha/intrange v0.1.2 // indirect
-	github.com/conduitio/conduit-commons v0.2.0 // indirect
 	github.com/conduitio/conduit-connector-protocol v0.6.0 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/daixiang0/gci v0.13.4 // indirect

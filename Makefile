@@ -6,9 +6,14 @@ build:
 
 .PHONY: test
 test:
-	docker-compose -f test/docker-compose.yml up --quiet-pull -d
-	go test -race $(GOTEST_FLAGS) ./...; ret=$$?; \
-		docker-compose -f test/docker-compose.yml down; \
+	go test $(GOTEST_FLAGS) -race ./...
+
+.PHONY: test-integration
+test-integration:
+	# run required docker containers, execute integration tests, stop containers after tests
+	docker compose -f test/docker-compose.yml up -d
+	go test $(GOTEST_FLAGS) -v -race ./...; ret=$$?; \
+		docker compose -f test/docker-compose.yml down; \
 		exit $$ret
 
 .PHONY: lint
