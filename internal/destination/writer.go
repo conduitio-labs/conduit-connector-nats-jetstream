@@ -17,10 +17,10 @@ package destination
 import (
 	"context"
 	"fmt"
+	"github.com/conduitio/conduit-commons/opencdc"
 	"time"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
-	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
 
@@ -76,7 +76,7 @@ func NewWriter(params writerParams) (*Writer, error) {
 }
 
 // Write synchronously writes a record.
-func (w *Writer) write(ctx context.Context, record sdk.Record) error {
+func (w *Writer) write(ctx context.Context, record opencdc.Record) error {
 	//nolint:golint,gocritic // false positive, the fix will create a memory leak
 	publishOpts := append(w.publishOpts, nats.Context(ctx))
 	_, err := w.publisher.Publish(w.subject, record.Bytes(), publishOpts...)

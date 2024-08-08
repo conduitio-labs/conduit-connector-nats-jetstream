@@ -17,10 +17,9 @@ package destination
 import (
 	"context"
 	"errors"
+	"github.com/conduitio/conduit-commons/opencdc"
 	"testing"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
 
@@ -40,8 +39,8 @@ func TestDestination_Configure(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:4222",
-					config.KeySubject: "foo",
+					"urls":    "nats://127.0.0.1:4222",
+					"subject": "foo",
 				},
 			},
 		},
@@ -59,7 +58,7 @@ func TestDestination_Configure(t *testing.T) {
 			args: args{
 				ctx: context.Background(),
 				cfg: map[string]string{
-					config.KeyURLs: "nats://127.0.0.1:4222",
+					"urls": "nats://127.0.0.1:4222",
 				},
 			},
 			expectedErr: `parse config: parse common config: validate config: "subject" value must be set`,
@@ -88,7 +87,7 @@ func TestDestination_Configure(t *testing.T) {
 
 func TestDestination_Write(t *testing.T) {
 	type args struct {
-		records       []sdk.Record
+		records       []opencdc.Record
 		failedWrites  int
 		closedContext bool
 	}
@@ -102,8 +101,8 @@ func TestDestination_Write(t *testing.T) {
 		{
 			name: "Write works as expected",
 			args: args{
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				records: []opencdc.Record{
+					{Payload: opencdc.Change{After: make(opencdc.RawData, 10)}},
 				},
 			},
 			expectedWritten: 1,
@@ -112,8 +111,8 @@ func TestDestination_Write(t *testing.T) {
 			name: "Write can fail",
 			args: args{
 				failedWrites: 1,
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				records: []opencdc.Record{
+					{Payload: opencdc.Change{After: make(opencdc.RawData, 10)}},
 				},
 			},
 			expectedWritten: 0,
@@ -123,9 +122,9 @@ func TestDestination_Write(t *testing.T) {
 			name: "context can be closed",
 			args: args{
 				closedContext: true,
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				records: []opencdc.Record{
+					{Payload: opencdc.Change{After: make(opencdc.RawData, 10)}},
+					{Payload: opencdc.Change{After: make(opencdc.RawData, 10)}},
 				},
 			},
 			expectedWritten: 0,

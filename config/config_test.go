@@ -15,179 +15,67 @@
 package config
 
 import (
-	"reflect"
-	"strings"
+	"github.com/matryer/is"
 	"testing"
 )
 
 func TestParse(t *testing.T) {
-	type args struct {
-		cfg map[string]string
-	}
-
 	tests := []struct {
 		name    string
-		args    args
-		want    Config
+		cfg     Config
 		wantErr bool
 	}{
 		{
 			name: "success, only required fields provided, many connection URLs",
-			args: args{
-				cfg: map[string]string{
-					"urls":    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					"subject": "foo",
-				},
-			},
-			want: Config{
-				URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-				Subject:       "foo",
-				MaxReconnects: DefaultMaxReconnects,
-				ReconnectWait: DefaultReconnectWait,
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, only required fields provided, one connection URL",
-			args: args{
-				cfg: map[string]string{
-					"urls":    "nats://127.0.0.1:1222",
-					"subject": "foo",
-				},
-			},
-			want: Config{
-				URLs:          []string{"nats://127.0.0.1:1222"},
-				Subject:       "foo",
-				MaxReconnects: DefaultMaxReconnects,
-				ReconnectWait: DefaultReconnectWait,
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, url with token",
-			args: args{
-				cfg: map[string]string{
-					"urls":    "nats://token:127.0.0.1:1222",
-					"subject": "foo",
-				},
-			},
-			want: Config{
-				URLs:          []string{"nats://token:127.0.0.1:1222"},
-				Subject:       "foo",
-				MaxReconnects: DefaultMaxReconnects,
-				ReconnectWait: DefaultReconnectWait,
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, url with user/password",
-			args: args{
-				cfg: map[string]string{
-					"urls":    "nats://admin:admin@127.0.0.1:1222",
-					"subject": "foo",
-				},
-			},
-			want: Config{
-				URLs:    []string{"nats://admin:admin@127.0.0.1:1222"},
+			cfg: Config{
+				URLs:    []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223"},
 				Subject: "foo",
 			},
 			wantErr: false,
 		},
 		{
-			name: "fail, required field (subject) is missing",
-			args: args{
-				cfg: map[string]string{
-					"urls": "nats://localhost:1222",
-				},
+			name: "success, only required fields provided, one connection URL",
+			cfg: Config{
+				URLs:    []string{"nats://127.0.0.1:1222"},
+				Subject: "foo",
 			},
-			want:    Config{},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
-			name: "fail, invalid url",
-			args: args{
-				cfg: map[string]string{
-					"urls":    "notaurl",
-					"subject": "foo",
-				},
+			name: "success, url with token",
+			cfg: Config{
+				URLs:    []string{"nats://token:127.0.0.1:1222"},
+				Subject: "foo",
 			},
-			want:    Config{},
+			wantErr: false,
+		},
+		{
+			name: "success, url with user/password",
+			cfg: Config{
+				URLs:    []string{"nats://admin:admin@127.0.0.1:1222"},
+				Subject: "foo",
+			},
+			wantErr: false,
+		},
+
+		{
+			name: "fail, invalid url",
+			cfg: Config{
+				URLs:    []string{"foo"},
+				Subject: "foo",
+			},
 			wantErr: true,
 		},
 		{
 			name: "fail, tls.clientCertPath without tls.clientPrivateKeyPath",
-			args: args{
-				cfg: map[string]string{
-					"urls":               "nats://127.0.0.1:1222",
-					"subject":            "foo",
-					"tls.clientCertPath": "./config.go",
+			cfg: Config{
+				URLs:    []string{"nats://127.0.0.1:1222"},
+				Subject: "foo",
+				ConfigTLS: ConfigTLS{
+					TLSClientCertPath: "./client-cert-path",
 				},
 			},
-			want:    Config{},
 			wantErr: true,
-		},
-		{
-			name: "success, nkey pair",
-			args: args{
-				cfg: map[string]string{
-					"urls":     "nats://127.0.0.1:1222",
-					"subject":  "foo",
-					"nkeyPath": "./config.go",
-				},
-			},
-			want: Config{
-				URLs:     []string{"nats://127.0.0.1:1222"},
-				Subject:  "foo",
-				NKeyPath: "./config.go",
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, credentials file",
-			args: args{
-				cfg: map[string]string{
-					"urls":                "nats://127.0.0.1:1222",
-					"subject":             "foo",
-					"credentialsFilePath": "./config.go",
-				},
-			},
-			want: Config{
-				URLs:                []string{"nats://127.0.0.1:1222"},
-				Subject:             "foo",
-				CredentialsFilePath: "./config.go",
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, custom connection name",
-			args: args{
-				cfg: map[string]string{
-					"urls":           "nats://127.0.0.1:1222",
-					"subject":        "foo",
-					"connectionName": "my_super_connection",
-				},
-			},
-			want: Config{
-				URLs:           []string{"nats://127.0.0.1:1222"},
-				Subject:        "foo",
-				ConnectionName: "my_super_connection",
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, empty connection name",
-			args: args{
-				cfg: map[string]string{
-					"urls":    "nats://127.0.0.1:1222",
-					"subject": "foo",
-				},
-			},
-			want: Config{
-				URLs:           []string{"nats://127.0.0.1:1222"},
-				Subject:        "foo",
-				ConnectionName: "connector-id",
-			},
-			wantErr: false,
 		},
 	}
 
@@ -195,20 +83,15 @@ func TestParse(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Parse(tt.args.cfg)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
+			is := is.New(t)
 
-				return
+			err := tt.cfg.Validate()
+			if tt.wantErr {
+				is.True(err != nil)
+			} else {
+				is.NoErr(err)
 			}
 
-			if strings.HasPrefix(got.ConnectionName, DefaultConnectionNamePrefix) {
-				tt.want.ConnectionName = got.ConnectionName
-			}
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Parse() = %v, want %v", got, tt.want)
-			}
 		})
 	}
 }
