@@ -59,28 +59,28 @@ const (
 // Config contains configurable values
 // shared between source and destination NATS JetStream connector.
 type Config struct {
-	URLs    []string `key:"urls" validate:"required,dive,url"`
-	Subject string   `key:"subject" validate:"required"`
+	URLs    []string `json:"urls" validate:"required,dive,url"`
+	Subject string   `json:"subject" validate:"required"`
 	// ConnectionName might come in handy when it comes to monitoring and so.
 	// See https://docs.nats.io/using-nats/developer/connecting/name.
-	ConnectionName string `key:"connectionName"`
+	ConnectionName string `json:"connectionName"`
 	// See https://docs.nats.io/using-nats/developer/connecting/nkey.
-	NKeyPath string `key:"nkeyPath" validate:"omitempty,file"`
+	NKeyPath string `json:"nkeyPath" validate:"omitempty,file"`
 	// See https://docs.nats.io/using-nats/developer/connecting/creds.
-	CredentialsFilePath string `key:"credentialsFilePath" validate:"omitempty,file"`
+	CredentialsFilePath string `json:"credentialsFilePath" validate:"omitempty,file"`
 	// Optional parameters for a TLS encrypted connection.
 	// For more details see https://docs.nats.io/using-nats/developer/connecting/tls.
-	TLSClientCertPath string `key:"tls.clientCertPath" validate:"required_with=TLSClientPrivateKeyPath,omitempty,file"`
+	TLSClientCertPath string `json:"tls.clientCertPath" validate:"required_with=TLSClientPrivateKeyPath,omitempty,file"`
 	//nolint:lll // "validate" tag can be pretty verbose
-	TLSClientPrivateKeyPath string `key:"tls.clientPrivateKeyPath" validate:"required_with=TLSClientCertPath,omitempty,file"`
-	TLSRootCACertPath       string `key:"tls.rootCACertPath" validate:"omitempty,file"`
+	TLSClientPrivateKeyPath string `json:"tls.clientPrivateKeyPath" validate:"required_with=TLSClientCertPath,omitempty,file"`
+	TLSRootCACertPath       string `json:"tls.rootCACertPath" validate:"omitempty,file"`
 	// MaxReconnect sets the number of reconnect attempts that will be
 	// tried before giving up. If negative, then it will never give up
 	// trying to reconnect.
-	MaxReconnects int `key:"maxReconnects"`
+	MaxReconnects int `json:"maxReconnects"`
 	// ReconnectWait sets the time to backoff after attempting a reconnect
 	// to a server that we were already connected to previously.
-	ReconnectWait time.Duration `key:"reconnectWait"`
+	ReconnectWait time.Duration `json:"reconnectWait"`
 }
 
 // Parse maps the incoming map to the Config and validates it.
