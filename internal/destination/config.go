@@ -15,19 +15,34 @@
 package destination
 
 import (
+	"errors"
 	"time"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+)
+
+var (
+	errNegativeRetryWait = errors.New("RetryWait can't be a negative value")
 )
 
 // Config holds destination specific configurable values.
 type Config struct {
 	config.Config
 
-	RetryWait     time.Duration `json:"retryWait" validate:"greater-than=0" default:"5s"`
+	RetryWait     time.Duration `json:"retryWait" default:"5s"`
 	RetryAttempts int           `json:"retryAttempts" validate:"greater-than=0" default:"3"`
 }
 
 func (c *Config) Validate() error {
-	return c.Config.Validate()
+	var errs []error
+
+	if err := c.Config.Validate(); err != nil {
+		errs = append(errs, err)
+	}
+
+	if c.RetryWait < 0 {
+		errs = append(errs, errNegativeRetryWait)
+	}
+
+	return errors.Join(errs...)
 }

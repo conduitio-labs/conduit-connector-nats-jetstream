@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"github.com/conduitio/conduit-commons/opencdc"
+	"github.com/matryer/is"
 	"testing"
 
 	"github.com/nats-io/nats.go"
@@ -25,7 +26,6 @@ import (
 
 func TestDestination_Configure(t *testing.T) {
 	type args struct {
-		ctx context.Context
 		cfg map[string]string
 	}
 
@@ -37,12 +37,22 @@ func TestDestination_Configure(t *testing.T) {
 		{
 			name: "success, correct config",
 			args: args{
-				ctx: context.Background(),
 				cfg: map[string]string{
 					"urls":    "nats://127.0.0.1:4222",
 					"subject": "foo",
 				},
 			},
+		},
+		{
+			name: "fail, negative retry wait",
+			args: args{
+				cfg: map[string]string{
+					"urls":      "nats://127.0.0.1:4222",
+					"subject":   "foo",
+					"retryWait": "-5s",
+				},
+			},
+			expectedErr: "RetryWait can't be a negative value",
 		},
 	}
 
@@ -50,17 +60,15 @@ func TestDestination_Configure(t *testing.T) {
 		tt := tt
 
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.New(t)
 			d := &Destination{}
-			if err := d.Configure(tt.args.ctx, tt.args.cfg); err != nil {
-				if tt.expectedErr == "" {
-					t.Errorf("Destination.Configure() unexpected error = %v", err)
 
-					return
-				}
-
-				if err.Error() != tt.expectedErr {
-					t.Errorf("Destination.Configure() error = %s, wantErr %s", err.Error(), tt.expectedErr)
-				}
+			err := d.Configure(context.Background(), tt.args.cfg)
+			if tt.expectedErr == "" {
+				is.NoErr(err)
+			} else {
+				is.True(err != nil)
+				is.Equal(err.Error(), tt.expectedErr)
 			}
 		})
 	}
