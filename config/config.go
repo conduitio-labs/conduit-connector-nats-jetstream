@@ -17,7 +17,6 @@ package config
 import (
 	"errors"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 )
@@ -58,16 +57,6 @@ func (c *Config) Validate() error {
 		if _, err := url.ParseRequestURI(urlStr); err != nil {
 			errs = append(errs, err)
 		}
-	}
-
-	// Validate NKeyPath
-	if _, err := os.Stat(c.NKeyPath); err != nil {
-		errs = append(errs, err)
-	}
-
-	// Validate CredentialsFilePath
-	if _, err := os.Stat(c.CredentialsFilePath); err != nil {
-		errs = append(errs, err)
 	}
 
 	// Validate TLS configuration
