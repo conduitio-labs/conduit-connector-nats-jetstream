@@ -67,6 +67,14 @@ func TestParse(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name: "fail, empty url",
+			cfg: Config{
+				URLs:    []string{""},
+				Subject: "foo",
+			},
+			wantErr: true,
+		},
+		{
 			name: "fail, tls.clientCertPath without tls.clientPrivateKeyPath",
 			cfg: Config{
 				URLs:    []string{"nats://127.0.0.1:1222"},

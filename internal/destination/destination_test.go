@@ -44,25 +44,6 @@ func TestDestination_Configure(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "fail, empty config",
-			args: args{
-				ctx: context.Background(),
-				cfg: map[string]string{},
-			},
-			expectedErr: `parse config: parse common config: validate config: "URLs[0]" value must be a valid url;` +
-				` "subject" value must be set`,
-		},
-		{
-			name: "fail, invalid config",
-			args: args{
-				ctx: context.Background(),
-				cfg: map[string]string{
-					"urls": "nats://127.0.0.1:4222",
-				},
-			},
-			expectedErr: `parse config: parse common config: validate config: "subject" value must be set`,
-		},
 	}
 
 	for _, tt := range tests {
