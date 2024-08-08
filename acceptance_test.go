@@ -30,7 +30,7 @@ type driver struct {
 	sdk.ConfigurableAcceptanceTestDriver
 }
 
-func (d driver) GenerateRecord(t *testing.T, operation sdk.Operation) sdk.Record {
+func (d driver) GenerateRecord(t *testing.T, operation opencdc.Operation) opencdc.Record {
 	record := d.ConfigurableAcceptanceTestDriver.GenerateRecord(t, operation)
 	// we don't need key for NATS JetStream
 	record.Key = nil

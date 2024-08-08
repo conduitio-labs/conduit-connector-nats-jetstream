@@ -151,7 +151,7 @@ func createTestJetStream(stream, subject string) (sdk.Source, error) {
 		return nil, fmt.Errorf("add stream: %v", err)
 	}
 
-	err = source.Open(context.Background(), sdk.Position(nil))
+	err = source.Open(context.Background(), opencdc.Position(nil))
 	if err != nil {
 		return nil, fmt.Errorf("open source: %v", err)
 	}
