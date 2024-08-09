@@ -18,8 +18,6 @@ import (
 	"github.com/conduitio/conduit-commons/opencdc"
 	"testing"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal/source"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
@@ -74,12 +72,12 @@ func beforeTest(cfg map[string]string) func(t *testing.T) {
 		conn, err := test.GetTestConnection()
 		is.NoErr(err)
 
-		streamName := cfg[source.ConfigKeyStream] + "-" + uuid.New().String()
+		streamName := cfg["stream"] + "-" + uuid.New().String()
 		subject := t.Name() + uuid.New().String()
 
 		err = test.CreateTestStream(conn, streamName, []string{subject})
 		is.NoErr(err)
 
-		cfg[config.KeySubject] = subject
+		cfg["subject"] = subject
 	}
 }
