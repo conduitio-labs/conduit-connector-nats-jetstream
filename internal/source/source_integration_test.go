@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
@@ -133,9 +132,9 @@ func TestSource_Read_JetStream_backoffRetry(t *testing.T) {
 func createTestJetStream(stream, subject string) (sdk.Source, error) {
 	source := NewSource()
 	err := source.Configure(context.Background(), map[string]string{
-		config.KeyURLs:    test.TestURL,
-		config.KeySubject: subject,
-		ConfigKeyStream:   stream,
+		ConfigUrls:    test.TestURL,
+		ConfigSubject: subject,
+		ConfigStream:  stream,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("configure source: %v", err)

@@ -15,6 +15,7 @@
 package nats
 
 import (
+	"github.com/conduitio/conduit-commons/opencdc"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
@@ -41,8 +42,8 @@ func (d driver) GenerateRecord(t *testing.T, operation opencdc.Operation) opencd
 //nolint:paralleltest // we don't need the paralleltest here
 func TestAcceptance(t *testing.T) {
 	cfg := map[string]string{
-		config.KeyURLs:         test.TestURL,
-		source.ConfigKeyStream: "test",
+		"urls":   test.TestURL,
+		"stream": "test",
 	}
 
 	sdk.AcceptanceTest(t, driver{

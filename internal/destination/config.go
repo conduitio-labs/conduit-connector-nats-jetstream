@@ -48,7 +48,7 @@ func ParseConfig(ctx context.Context, cfg commonscfg.Config, parameters commonsc
 		},
 	}
 
-	err := sdk.Util.ParseConfig(ctx, cfg, parsedCfg, parameters)
+	err := sdk.Util.ParseConfig(ctx, cfg, &parsedCfg, parameters)
 	if err != nil {
 		return Config{}, err
 	}

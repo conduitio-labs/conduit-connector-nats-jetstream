@@ -37,19 +37,6 @@ const (
 	defaultAckPolicy = nats.AckExplicitPolicy
 )
 
-const (
-	// ConfigKeyDeliverSubject is a config name for a deliver subject.
-	ConfigKeyDeliverSubject = "deliverSubject"
-	// ConfigKeyStream is a config name for a stream name.
-	ConfigKeyStream = "stream"
-	// ConfigKeyDurable is a config name for a durable name.
-	ConfigKeyDurable = "durable"
-	// ConfigKeyDeliverPolicy is a config name for a message deliver policy.
-	ConfigKeyDeliverPolicy = "deliverPolicy"
-	// ConfigKeyAckPolicy is a config name for a message acknowledge policy.
-	ConfigKeyAckPolicy = "ackPolicy"
-)
-
 // Config holds source specific configurable values.
 type Config struct {
 	config.Config
