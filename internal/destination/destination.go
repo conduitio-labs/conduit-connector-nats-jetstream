@@ -17,9 +17,10 @@ package destination
 import (
 	"context"
 	"fmt"
+	"strings"
+
 	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"
-	"strings"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"

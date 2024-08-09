@@ -17,9 +17,10 @@ package destination
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/conduitio/conduit-commons/opencdc"
 	"github.com/matryer/is"
-	"testing"
 
 	"github.com/nats-io/nats.go"
 )
@@ -182,7 +183,6 @@ func TestDestination_Teardown(t *testing.T) {
 				nc: nm,
 			}
 			err := d.Teardown(tt.args.ctx)
-
 			// Asserts
 			if err != nil {
 				t.Errorf("Destination.Teardown() unexpected error = %v", err)
@@ -207,6 +207,7 @@ func (m *natsMock) Drain() error {
 func (m *natsMock) JetStream(...nats.JSOpt) (nats.JetStreamContext, error) {
 	return nil, nil
 }
+
 func (m *natsMock) IsConnected() bool {
 	return false
 }

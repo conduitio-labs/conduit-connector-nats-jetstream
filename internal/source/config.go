@@ -19,6 +19,7 @@ package source
 import (
 	"context"
 	"fmt"
+
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	commonscfg "github.com/conduitio/conduit-commons/config"
 	sdk "github.com/conduitio/conduit-connector-sdk"
@@ -27,14 +28,8 @@ import (
 )
 
 const (
-	// defaultDurablePrefix is the default consumer name prefix.
-	defaultDurablePrefix = "conduit-"
 	// defaultDeliverSubjectSuffix is the default deliver subject suffix.
 	defaultDeliverSubjectSuffix = "conduit"
-	// defaultDeliverPolicy is the default message deliver policy.
-	defaultDeliverPolicy = nats.DeliverAllPolicy
-	// defaultAckPolicy is the default message acknowledge policy.
-	defaultAckPolicy = nats.AckExplicitPolicy
 )
 
 // Config holds source specific configurable values.

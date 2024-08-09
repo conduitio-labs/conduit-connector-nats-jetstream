@@ -16,6 +16,10 @@ test-integration:
 		docker compose -f test/docker-compose.yml down; \
 		exit $$ret
 
+.PHONY: fmt
+fmt:
+	gofumpt -l -w .
+
 .PHONY: lint
 lint:
 	golangci-lint run

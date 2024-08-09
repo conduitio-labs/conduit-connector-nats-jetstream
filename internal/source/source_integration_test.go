@@ -21,9 +21,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/conduitio/conduit-commons/opencdc"
 	"testing"
 	"time"
+
+	"github.com/conduitio/conduit-commons/opencdc"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"

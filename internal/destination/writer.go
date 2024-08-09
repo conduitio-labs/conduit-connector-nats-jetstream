@@ -17,8 +17,9 @@ package destination
 import (
 	"context"
 	"fmt"
-	"github.com/conduitio/conduit-commons/opencdc"
 	"time"
+
+	"github.com/conduitio/conduit-commons/opencdc"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	"github.com/nats-io/nats.go"

@@ -16,8 +16,9 @@ package source
 
 import (
 	"context"
-	"github.com/nats-io/nats.go"
 	"testing"
+
+	"github.com/nats-io/nats.go"
 
 	commonscfg "github.com/conduitio/conduit-commons/config"
 	"github.com/matryer/is"

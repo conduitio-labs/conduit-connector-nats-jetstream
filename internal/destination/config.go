@@ -26,9 +26,7 @@ import (
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
-var (
-	errNegativeRetryWait = errors.New("RetryWait can't be a negative value")
-)
+var errNegativeRetryWait = errors.New("RetryWait can't be a negative value")
 
 // Config holds destination specific configurable values.
 type Config struct {

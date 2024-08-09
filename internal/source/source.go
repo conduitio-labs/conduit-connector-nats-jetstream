@@ -17,6 +17,7 @@ package source
 import (
 	"context"
 	"fmt"
+
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	"github.com/conduitio/conduit-commons/config"
 	"github.com/conduitio/conduit-commons/opencdc"

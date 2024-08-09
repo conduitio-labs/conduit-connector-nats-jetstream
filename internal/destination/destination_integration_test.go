@@ -18,8 +18,9 @@ package destination
 
 import (
 	"context"
-	"github.com/conduitio/conduit-commons/opencdc"
 	"testing"
+
+	"github.com/conduitio/conduit-commons/opencdc"
 
 	test "github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	"github.com/matryer/is"

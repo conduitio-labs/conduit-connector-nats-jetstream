@@ -72,6 +72,7 @@ func (c *Config) ToURL() string {
 	return strings.Join(c.URLs, ",")
 }
 
+//nolint:revive // Consistent with Config above
 type ConfigTLS struct {
 	// TLSClientCertPath is the path to a client certificate.
 	// For more details see https://docs.nats.io/using-nats/developer/connecting/tls.
@@ -96,5 +97,6 @@ func (cfg ConfigTLS) Validate() error {
 	case cfg.TLSClientPrivateKeyPath == "":
 		return errors.New("TLSClientPrivateKeyPath is missing")
 	}
+
 	return nil
 }

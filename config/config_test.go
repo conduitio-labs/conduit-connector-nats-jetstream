@@ -15,8 +15,9 @@
 package config
 
 import (
-	"github.com/matryer/is"
 	"testing"
+
+	"github.com/matryer/is"
 )
 
 func TestParse(t *testing.T) {
@@ -110,7 +111,6 @@ func TestParse(t *testing.T) {
 			} else {
 				is.NoErr(err)
 			}
-
 		})
 	}
 }
