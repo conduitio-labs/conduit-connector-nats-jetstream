@@ -18,8 +18,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
+	"github.com/conduitio/conduit-commons/config"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
 )
@@ -39,110 +40,24 @@ func NewSource() sdk.Source {
 }
 
 // Parameters is a map of named Parameters that describe how to configure the Source.
-func (s *Source) Parameters() map[string]sdk.Parameter {
-	return map[string]sdk.Parameter{
-		config.KeyURLs: {
-			Default:     "",
-			Required:    true,
-			Description: "The connection URLs pointed to NATS instances.",
-		},
-		ConfigKeyStream: {
-			Default:     "",
-			Required:    true,
-			Description: "A name of a stream from which the connector should read.",
-		},
-		config.KeySubject: {
-			Default:     "",
-			Required:    true,
-			Description: "A name of a subject from which the connector should read.",
-		},
-		config.KeyConnectionName: {
-			Default:     "",
-			Required:    false,
-			Description: "Optional connection name which will come in handy when it comes to monitoring.",
-		},
-		config.KeyNKeyPath: {
-			Default:     "",
-			Required:    false,
-			Description: "A path pointed to a NKey pair.",
-		},
-		config.KeyCredentialsFilePath: {
-			Default:     "",
-			Required:    false,
-			Description: "A path pointed to a credentials file.",
-		},
-		config.KeyTLSClientCertPath: {
-			Default:  "",
-			Required: false,
-			Description: "A path pointed to a TLS client certificate, must be present " +
-				"if tls.clientPrivateKeyPath field is also present.",
-		},
-		config.KeyTLSClientPrivateKeyPath: {
-			Default:  "",
-			Required: false,
-			Description: "A path pointed to a TLS client private key, must be present " +
-				"if tls.clientCertPath field is also present.",
-		},
-		config.KeyTLSRootCACertPath: {
-			Default:     "",
-			Required:    false,
-			Description: "A path pointed to a TLS root certificate, provide if you want to verify server’s identity.",
-		},
-		config.KeyMaxReconnects: {
-			Default:  "5",
-			Required: false,
-			Description: "Sets the number of reconnect attempts " +
-				"that will be tried before giving up. If negative, " +
-				"then it will never give up trying to reconnect.",
-		},
-		config.KeyReconnectWait: {
-			Default:  "5s",
-			Required: false,
-			Description: "Sets the time to backoff after attempting a reconnect " +
-				"to a server that we were already connected to previously.",
-		},
-		ConfigKeyBufferSize: {
-			Default:     "1024",
-			Required:    false,
-			Description: "A buffer size for consumed messages.",
-		},
-		ConfigKeyDurable: {
-			Default:     "",
-			Required:    false,
-			Description: "A consumer name.",
-		},
-		ConfigKeyDeliverSubject: {
-			Default:     "<durable>.conduit", // FIXME it send the way that it is
-			Required:    false,
-			Description: "Specifies the JetStream consumer deliver subject.",
-		},
-		ConfigKeyDeliverPolicy: {
-			Default:     "all",
-			Required:    false,
-			Description: "Defines where in the stream the connector should start receiving messages.",
-		},
-		ConfigKeyAckPolicy: {
-			Default:     "explicit",
-			Required:    false,
-			Description: "Defines how messages should be acknowledged.",
-		},
-	}
+func (s *Source) Parameters() config.Parameters {
+	return Config{}.Parameters()
 }
 
 // Configure parses and initializes the config.
-func (s *Source) Configure(_ context.Context, cfg map[string]string) error {
-	config, err := Parse(cfg)
+func (s *Source) Configure(ctx context.Context, cfg config.Config) error {
+	parsedCfg, err := ParseConfig(ctx, cfg, NewSource().Parameters())
 	if err != nil {
-		return fmt.Errorf("parse config: %w", err)
+		return err
 	}
 
-	s.config = config
+	s.config = parsedCfg
 
 	return nil
 }
 
 // Open opens a connection to NATS and initializes iterators.
-func (s *Source) Open(ctx context.Context, position sdk.Position) error {
+func (s *Source) Open(ctx context.Context, position opencdc.Position) error {
 	opts, err := internal.GetConnectionOptions(s.config.Config)
 	if err != nil {
 		return fmt.Errorf("get connection options: %w", err)
@@ -161,8 +76,8 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 		DeliverSubject: s.config.DeliverSubject,
 		Subject:        s.config.Subject,
 		SDKPosition:    position,
-		DeliverPolicy:  s.config.DeliverPolicy,
-		AckPolicy:      s.config.AckPolicy,
+		DeliverPolicy:  s.config.NATSDeliverPolicy(),
+		AckPolicy:      s.config.NATSAckPolicy(),
 	})
 	if err != nil {
 		return fmt.Errorf("init jetstream iterator: %w", err)
@@ -186,21 +101,21 @@ func (s *Source) Open(ctx context.Context, position sdk.Position) error {
 
 // Read fetches a record from an iterator.
 // If there's no record will return sdk.ErrBackoffRetry.
-func (s *Source) Read(ctx context.Context) (sdk.Record, error) {
+func (s *Source) Read(ctx context.Context) (opencdc.Record, error) {
 	if !s.iterator.HasNext(ctx) {
-		return sdk.Record{}, sdk.ErrBackoffRetry
+		return opencdc.Record{}, sdk.ErrBackoffRetry
 	}
 
 	record, err := s.iterator.Next(ctx)
 	if err != nil {
-		return sdk.Record{}, fmt.Errorf("read next record: %w", err)
+		return opencdc.Record{}, fmt.Errorf("read next record: %w", err)
 	}
 
 	return record, nil
 }
 
 // Ack acknowledges a message at the given position.
-func (s *Source) Ack(_ context.Context, position sdk.Position) error {
+func (s *Source) Ack(_ context.Context, position opencdc.Position) error {
 	return s.iterator.Ack(position)
 }
 
