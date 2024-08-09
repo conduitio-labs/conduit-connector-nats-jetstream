@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/conduitio/conduit-commons/opencdc"
 )
 
 // position defines a position model for the JetStream iterator.

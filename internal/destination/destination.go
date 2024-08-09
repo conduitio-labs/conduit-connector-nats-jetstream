@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate paramgen -output=paramgen.go Config
-
 package destination
 
 import (
@@ -48,20 +46,12 @@ func (d *Destination) Parameters() config.Parameters {
 
 // Configure parses and initializes the config.
 func (d *Destination) Configure(ctx context.Context, cfg config.Config) error {
-	if cfg["connectionName"] == "" {
-		// todo get connector ID from ctx
-		cfg["connectionName"] = "connector-id"
-	}
-
-	err := sdk.Util.ParseConfig(ctx, cfg, &d.config, NewDestination().Parameters())
+	parsedCfg, err := ParseConfig(ctx, cfg, NewDestination().Parameters())
 	if err != nil {
 		return err
 	}
 
-	err = d.config.Validate()
-	if err != nil {
-		return err
-	}
+	d.config = parsedCfg
 
 	return nil
 }

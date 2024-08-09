@@ -85,6 +85,17 @@ func TestParse(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "fail, tls.clientPrivateKeyPath without tls.clientCertPath",
+			cfg: Config{
+				URLs:    []string{"nats://127.0.0.1:1222"},
+				Subject: "foo",
+				ConfigTLS: ConfigTLS{
+					TLSClientPrivateKeyPath: "./private-key-path",
+				},
+			},
+			wantErr: true,
+		},
 	}
 
 	for _, tt := range tests {

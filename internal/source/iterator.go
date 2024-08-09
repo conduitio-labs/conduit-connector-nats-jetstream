@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/conduitio/conduit-commons/opencdc"
 	"sync"
 	"time"
 
@@ -169,7 +170,7 @@ func (i *Iterator) Next(ctx context.Context) (opencdc.Record, error) {
 		if err != nil {
 			return opencdc.Record{},
 				errors.Join(
-					sdk.ErrMetadataFieldNotFound,
+					opencdc.ErrMetadataFieldNotFound,
 					fmt.Errorf("convert message to record: %w", err),
 				)
 		}

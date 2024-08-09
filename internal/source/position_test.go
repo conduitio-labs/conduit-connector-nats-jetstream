@@ -15,10 +15,9 @@
 package source
 
 import (
+	"github.com/conduitio/conduit-commons/opencdc"
 	"reflect"
 	"testing"
-
-	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
 func Test_position_marshalPosition(t *testing.T) {

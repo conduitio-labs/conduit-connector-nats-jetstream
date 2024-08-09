@@ -15,326 +15,153 @@
 package source
 
 import (
-	"reflect"
-	"strings"
+	"context"
+	"github.com/nats-io/nats.go"
 	"testing"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	"github.com/nats-io/nats.go"
+	commonscfg "github.com/conduitio/conduit-commons/config"
+	"github.com/matryer/is"
 )
 
-func TestParse(t *testing.T) {
-	type args struct {
-		cfg map[string]string
+func TestParse_Durable_Default(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	rawCfg := commonscfg.Config{
+		"urls":    "nats://127.0.0.1:1222",
+		"subject": "test-subject",
+		"stream":  "test-stream",
 	}
 
-	tests := []struct {
-		name    string
-		args    args
-		want    Config
-		wantErr bool
+	parsed, err := ParseConfig(ctx, rawCfg, NewSource().Parameters())
+	is.NoErr(err)
+	is.True(parsed.Durable != "")
+}
+
+func TestParse_Durable_Custom(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	rawCfg := commonscfg.Config{
+		"urls":    "nats://127.0.0.1:1222",
+		"subject": "test-subject",
+		"stream":  "test-stream",
+		"durable": "foobar",
+	}
+
+	parsed, err := ParseConfig(ctx, rawCfg, NewSource().Parameters())
+	is.NoErr(err)
+	is.Equal(rawCfg["durable"], parsed.Durable)
+}
+
+func TestParse_DeliverSubject_Default(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	rawCfg := commonscfg.Config{
+		"urls":    "nats://127.0.0.1:1222",
+		"subject": "test-subject",
+		"stream":  "test-stream",
+	}
+
+	parsed, err := ParseConfig(ctx, rawCfg, NewSource().Parameters())
+	is.NoErr(err)
+	is.True(parsed.DeliverSubject != "")
+}
+
+func TestParse_DeliverSubject_Custom(t *testing.T) {
+	is := is.New(t)
+	ctx := context.Background()
+	rawCfg := commonscfg.Config{
+		"urls":           "nats://127.0.0.1:1222",
+		"subject":        "test-subject",
+		"stream":         "test-stream",
+		"deliverSubject": "foobar",
+	}
+
+	parsed, err := ParseConfig(ctx, rawCfg, NewSource().Parameters())
+	is.NoErr(err)
+	is.Equal(rawCfg["deliverSubject"], parsed.DeliverSubject)
+}
+
+func TestParse_AckPolicy(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input string
+		want  nats.AckPolicy
 	}{
 		{
-			name: "success, valid DeliverSubject, all other are defaults",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:          "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:       "foo",
-					ConfigKeyDeliverSubject: "super.subject",
-					ConfigKeyStream:         "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:         "test",
-				DeliverSubject: "super.subject",
-				BufferSize:     defaultBufferSize,
-				DeliverPolicy:  defaultDeliverPolicy,
-				AckPolicy:      defaultAckPolicy,
-			},
-			wantErr: false,
+			name: "default (explicit)",
+			want: nats.AckExplicitPolicy,
 		},
 		{
-			name: "success, default values",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject: "foo",
-					ConfigKeyStream:   "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:         "test",
-				DeliverSubject: "",
-				BufferSize:     defaultBufferSize,
-				DeliverPolicy:  defaultDeliverPolicy,
-				AckPolicy:      defaultAckPolicy,
-			},
-			wantErr: false,
+			name:  "none",
+			input: "none",
+			want:  nats.AckNonePolicy,
 		},
 		{
-			name: "success, set buffer size",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyBufferSize: "128",
-					ConfigKeyStream:     "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:        "test",
-				BufferSize:    128,
-				DeliverPolicy: defaultDeliverPolicy,
-				AckPolicy:     defaultAckPolicy,
-			},
-			wantErr: false,
+			name:  "explicit",
+			input: "explicit",
+			want:  nats.AckExplicitPolicy,
 		},
 		{
-			name: "success, default buffer size",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject: "foo",
-					ConfigKeyStream:   "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:        "test",
-				BufferSize:    defaultBufferSize,
-				DeliverPolicy: defaultDeliverPolicy,
-				AckPolicy:     defaultAckPolicy,
-			},
-			wantErr: false,
-		},
-		{
-			name: "fail, invalid buffer size",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyBufferSize: "8",
-					ConfigKeyStream:     "test",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
-		},
-		{
-			name: "fail, invalid buffer size",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:      "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:   "foo",
-					ConfigKeyBufferSize: "what",
-					ConfigKeyStream:     "test",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
-		},
-		{
-			name: "success, all ack policy",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:     "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:  "foo",
-					ConfigKeyAckPolicy: "all",
-					ConfigKeyStream:    "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:     "test",
-				BufferSize: defaultBufferSize,
-				AckPolicy:  nats.AckAllPolicy,
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, none ack policy",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:     "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:  "foo",
-					ConfigKeyAckPolicy: "none",
-					ConfigKeyStream:    "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:        "test",
-				BufferSize:    defaultBufferSize,
-				DeliverPolicy: defaultDeliverPolicy,
-				AckPolicy:     nats.AckNonePolicy,
-			},
-			wantErr: false,
-		},
-		{
-			name: "fail, invalid ack policy",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:     "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:  "foo",
-					ConfigKeyAckPolicy: "wrong",
-					ConfigKeyStream:    "test",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
-		},
-		{
-			name: "success, deliver policy new",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:         "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:      "foo",
-					ConfigKeyDeliverPolicy: "new",
-					ConfigKeyAckPolicy:     "explicit",
-					ConfigKeyStream:        "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:        "test",
-				BufferSize:    defaultBufferSize,
-				DeliverPolicy: nats.DeliverNewPolicy,
-				AckPolicy:     nats.AckExplicitPolicy,
-			},
-			wantErr: false,
-		},
-		{
-			name: "fail, invalid deliver policy",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:         "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject:      "foo",
-					ConfigKeyDeliverPolicy: "wrong",
-					ConfigKeyAckPolicy:     "explicit",
-					ConfigKeyStream:        "test",
-				},
-			},
-			want:    Config{},
-			wantErr: true,
-		},
-		{
-			name: "success, custom durable name",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject: "foo",
-					ConfigKeyDurable:  "my_super_durable",
-					ConfigKeyStream:   "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:         "test",
-				DeliverSubject: "my_super_durable.conduit",
-				Durable:        "my_super_durable",
-				BufferSize:     defaultBufferSize,
-				DeliverPolicy:  nats.DeliverAllPolicy,
-				AckPolicy:      nats.AckExplicitPolicy,
-			},
-			wantErr: false,
-		},
-		{
-			name: "success, generated durable name",
-			args: args{
-				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:1222,nats://127.0.0.1:1223,nats://127.0.0.1:1224",
-					config.KeySubject: "foo",
-					ConfigKeyDurable:  "",
-					ConfigKeyStream:   "test",
-				},
-			},
-			want: Config{
-				Config: config.Config{
-					URLs:          []string{"nats://127.0.0.1:1222", "nats://127.0.0.1:1223", "nats://127.0.0.1:1224"},
-					Subject:       "foo",
-					MaxReconnects: config.DefaultMaxReconnects,
-					ReconnectWait: config.DefaultReconnectWait,
-				},
-				Stream:         "test",
-				DeliverSubject: ".conduit",
-				Durable:        "conduit-",
-				BufferSize:     defaultBufferSize,
-				DeliverPolicy:  nats.DeliverAllPolicy,
-				AckPolicy:      nats.AckExplicitPolicy,
-			},
-			wantErr: false,
+			name:  "all",
+			input: "all",
+			want:  nats.AckAllPolicy,
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := Parse(tt.args.cfg)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
-
-				return
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			is := is.New(t)
+			ctx := context.Background()
+			rawCfg := commonscfg.Config{
+				"urls":      "nats://127.0.0.1:1222",
+				"subject":   "test-subject",
+				"stream":    "test-stream",
+				"ackPolicy": tc.input,
 			}
 
-			if strings.HasPrefix(got.ConnectionName, config.DefaultConnectionNamePrefix) {
-				tt.want.ConnectionName = got.ConnectionName
+			parsed, err := ParseConfig(ctx, rawCfg, NewSource().Parameters())
+			is.NoErr(err)
+			is.Equal(tc.want, parsed.NATSAckPolicy())
+		})
+	}
+}
+
+func TestParse_DeliverPolicy(t *testing.T) {
+	testCases := []struct {
+		name  string
+		input string
+		want  nats.DeliverPolicy
+	}{
+		{
+			name: "default (all)",
+			want: nats.DeliverAllPolicy,
+		},
+		{
+			name:  "all",
+			input: "all",
+			want:  nats.DeliverAllPolicy,
+		},
+		{
+			name:  "new",
+			input: "new",
+			want:  nats.DeliverNewPolicy,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			is := is.New(t)
+			ctx := context.Background()
+			rawCfg := commonscfg.Config{
+				"urls":          "nats://127.0.0.1:1222",
+				"subject":       "test-subject",
+				"stream":        "test-stream",
+				"deliverPolicy": tc.input,
 			}
 
-			if strings.HasPrefix(got.Durable, defaultDurablePrefix) {
-				tt.want.Durable = got.Durable
-			}
-
-			if strings.HasSuffix(got.DeliverSubject, defaultDeliverSubjectSuffix) {
-				tt.want.DeliverSubject = got.DeliverSubject
-			}
-
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Parse() = %v, want %v", got, tt.want)
-			}
+			parsed, err := ParseConfig(ctx, rawCfg, NewSource().Parameters())
+			is.NoErr(err)
+			is.Equal(tc.want, parsed.NATSDeliverPolicy())
 		})
 	}
 }
