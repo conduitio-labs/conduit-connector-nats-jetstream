@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+
 package nats
 
 import (
-	"github.com/conduitio/conduit-commons/opencdc"
 	"testing"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
+	"github.com/conduitio/conduit-commons/opencdc"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 	"github.com/matryer/is"
@@ -39,18 +41,22 @@ func (d driver) GenerateRecord(t *testing.T, operation opencdc.Operation) opencd
 
 //nolint:paralleltest // we don't need the paralleltest here
 func TestAcceptance(t *testing.T) {
-	cfg := map[string]string{
+	sourceCfg := map[string]string{
 		"urls":   test.TestURL,
 		"stream": "test",
+	}
+	destCfg := map[string]string{
+		"urls":    test.TestURL,
+		"subject": "test",
 	}
 
 	sdk.AcceptanceTest(t, driver{
 		ConfigurableAcceptanceTestDriver: sdk.ConfigurableAcceptanceTestDriver{
 			Config: sdk.ConfigurableAcceptanceTestDriverConfig{
 				Connector:         Connector,
-				SourceConfig:      cfg,
-				DestinationConfig: cfg,
-				BeforeTest:        beforeTest(cfg),
+				SourceConfig:      sourceCfg,
+				DestinationConfig: destCfg,
+				BeforeTest:        beforeTest(sourceCfg, destCfg),
 				Skip:              []string{},
 				GoleakOptions: []goleak.Option{
 					// nats.go spawns a separate goroutine to process flush requests
@@ -65,19 +71,20 @@ func TestAcceptance(t *testing.T) {
 }
 
 // beforeTest creates new stream before each test.
-func beforeTest(cfg map[string]string) func(t *testing.T) {
+func beforeTest(sourceCfg, destCfg map[string]string) func(t *testing.T) {
 	return func(t *testing.T) {
 		is := is.New(t)
 
 		conn, err := test.GetTestConnection()
 		is.NoErr(err)
 
-		streamName := cfg["stream"] + "-" + uuid.New().String()
+		streamName := sourceCfg["stream"] + "-" + uuid.New().String()
 		subject := t.Name() + uuid.New().String()
 
 		err = test.CreateTestStream(conn, streamName, []string{subject})
 		is.NoErr(err)
 
-		cfg["subject"] = subject
+		sourceCfg["subject"] = subject
+		destCfg["subject"] = subject
 	}
 }
