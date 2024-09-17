@@ -11,7 +11,7 @@ test:
 .PHONY: test-integration
 test-integration:
 	# run required docker containers, execute integration tests, stop containers after tests
-	docker compose -f test/docker-compose.yml up -d
+	docker compose -f test/docker-compose.yml up -d --wait
 	go test $(GOTEST_FLAGS) -v -race --tags=integration ./...; ret=$$?; \
 		docker compose -f test/docker-compose.yml down; \
 		exit $$ret

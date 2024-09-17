@@ -1,12 +1,14 @@
 services:
   nats:
-    image: nats:2.10.18
-    command: --js --debug # enable JetStream
+    image: nats:2.10.20-alpine3.20
+    # enable JetStream
+    command: --js --http_port 8222 --debug
     ports:
       - "4222:4222"
       - "8222:8222"
     healthcheck:
-      test: ["CMD", "curl", "http://localhost:8222/healthz"]
-      timeout: 30s
-      interval: 10s
+      test: [ "CMD", "wget", "--output-document", "-", "http://localhost:8222/healthz" ]
+      interval: 2s
+      timeout: 10s
       retries: 5
+      start_period: 30s
