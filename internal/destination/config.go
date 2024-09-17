@@ -41,8 +41,7 @@ type Config struct {
 func ParseConfig(ctx context.Context, cfg commonscfg.Config, parameters commonscfg.Parameters) (Config, error) {
 	parsedCfg := Config{
 		Config: config.Config{
-			// todo get connector ID from ctx
-			ConnectionName: "connector-id",
+			ConnectionName: sdk.ConnectorIDFromContext(ctx),
 		},
 	}
 

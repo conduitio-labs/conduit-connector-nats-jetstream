@@ -58,8 +58,7 @@ func ParseConfig(ctx context.Context, cfg commonscfg.Config, parameters commonsc
 	// set defaults
 	parsedCfg := Config{
 		Config: config.Config{
-			// todo get connector ID from ctx
-			ConnectionName: "connector-id",
+			ConnectionName: sdk.ConnectorIDFromContext(ctx),
 		},
 		Durable:        durable,
 		DeliverSubject: fmt.Sprintf("%s.%s", durable, defaultDeliverSubjectSuffix),
