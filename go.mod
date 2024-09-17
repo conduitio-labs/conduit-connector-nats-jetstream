@@ -1,8 +1,6 @@
 module github.com/conduitio-labs/conduit-connector-nats-jetstream
 
-go 1.22.5
-
-toolchain go1.22.6
+go 1.23.1
 
 require (
 	github.com/conduitio/conduit-commons v0.3.0

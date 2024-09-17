@@ -48,8 +48,6 @@ func Test_position_marshalPosition(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			p := position{
 				OptSeq: tt.fields.OptSeq,
@@ -126,8 +124,6 @@ func Test_parsePosition(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := parsePosition(tt.args.sdkPosition)
 			if (err != nil) != tt.wantErr {
