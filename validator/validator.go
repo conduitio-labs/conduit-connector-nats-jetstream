@@ -81,13 +81,13 @@ func alphanumErr(name string) error {
 }
 
 // minErr returns the formatted min error.
-func minErr(name, min string) error {
-	return fmt.Errorf("%q value must be greater than or equal to %s", name, min)
+func minErr(name, limit string) error {
+	return fmt.Errorf("%q value must be greater than or equal to %s", name, limit)
 }
 
 // maxErr returns the formatted max error.
-func maxErr(name, max string) error {
-	return fmt.Errorf("%q value must be less than or equal to %s", name, max)
+func maxErr(name, limit string) error {
+	return fmt.Errorf("%q value must be less than or equal to %s", name, limit)
 }
 
 // fileErr returns the formatted file error.

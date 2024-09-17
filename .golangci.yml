@@ -1,8 +1,7 @@
+run:
+  timeout: 5m
+
 linters-settings:
-  gofmt:
-    simplify: false
-  govet:
-    check-shadowing: false
   nolintlint:
     allow-unused: false # report any unused nolint directives
     require-explanation: true # require an explanation for nolint directives
@@ -25,6 +24,7 @@ linters:
   disable-all: true
   enable:
     - bodyclose
+    - copyloopvar
     # - depguard
     - dogsled
     - durationcheck
@@ -33,7 +33,6 @@ linters:
     # - errorlint
     # - exhaustive
     # - exhaustivestruct
-    - exportloopref
     # - forbidigo
     # - forcetypeassert
     # - funlen
@@ -44,7 +43,7 @@ linters:
     # - cyclop # not interested in package complexities at the moment
     - godot
     - gofmt
-    # - gofumpt
+    - gofumpt
     - goheader
     - goimports
     - revive

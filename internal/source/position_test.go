@@ -18,14 +18,14 @@ import (
 	"reflect"
 	"testing"
 
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/conduitio/conduit-commons/opencdc"
 )
 
 func Test_position_marshalPosition(t *testing.T) {
 	tests := []struct {
 		name    string
 		fields  position
-		want    sdk.Position
+		want    opencdc.Position
 		wantErr bool
 	}{
 		{
@@ -33,7 +33,7 @@ func Test_position_marshalPosition(t *testing.T) {
 			fields: position{
 				OptSeq: 32,
 			},
-			want: sdk.Position(
+			want: opencdc.Position(
 				`{"opt_seq":32}`,
 			),
 			wantErr: false,
@@ -41,15 +41,13 @@ func Test_position_marshalPosition(t *testing.T) {
 		{
 			name:   "success, empty",
 			fields: position{},
-			want: sdk.Position(
+			want: opencdc.Position(
 				`{"opt_seq":0}`,
 			),
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			p := position{
 				OptSeq: tt.fields.OptSeq,
@@ -71,7 +69,7 @@ func Test_position_marshalPosition(t *testing.T) {
 
 func Test_parsePosition(t *testing.T) {
 	type args struct {
-		sdkPosition sdk.Position
+		sdkPosition opencdc.Position
 	}
 	tests := []struct {
 		name    string
@@ -82,7 +80,7 @@ func Test_parsePosition(t *testing.T) {
 		{
 			name: "success, all fields",
 			args: args{
-				sdkPosition: sdk.Position([]byte(
+				sdkPosition: opencdc.Position([]byte(
 					`{"opt_seq":32}`,
 				)),
 			},
@@ -94,7 +92,7 @@ func Test_parsePosition(t *testing.T) {
 		{
 			name: "success, empty",
 			args: args{
-				sdkPosition: sdk.Position([]byte(
+				sdkPosition: opencdc.Position([]byte(
 					`{}`,
 				)),
 			},
@@ -106,7 +104,7 @@ func Test_parsePosition(t *testing.T) {
 		{
 			name: "success, position is nil",
 			args: args{
-				sdkPosition: sdk.Position(nil),
+				sdkPosition: opencdc.Position(nil),
 			},
 			want: position{
 				OptSeq: 0,
@@ -116,7 +114,7 @@ func Test_parsePosition(t *testing.T) {
 		{
 			name: "fail, wrong field type",
 			args: args{
-				sdkPosition: sdk.Position([]byte(
+				sdkPosition: opencdc.Position([]byte(
 					`{"opt_seq":"32"}`,
 				)),
 			},
@@ -126,8 +124,6 @@ func Test_parsePosition(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := parsePosition(tt.args.sdkPosition)
 			if (err != nil) != tt.wantErr {

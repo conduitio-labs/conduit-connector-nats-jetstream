@@ -19,14 +19,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/conduitio/conduit-commons/opencdc"
+	"github.com/matryer/is"
+
 	"github.com/nats-io/nats.go"
 )
 
 func TestDestination_Configure(t *testing.T) {
 	type args struct {
-		ctx context.Context
 		cfg map[string]string
 	}
 
@@ -38,49 +38,36 @@ func TestDestination_Configure(t *testing.T) {
 		{
 			name: "success, correct config",
 			args: args{
-				ctx: context.Background(),
 				cfg: map[string]string{
-					config.KeyURLs:    "nats://127.0.0.1:4222",
-					config.KeySubject: "foo",
+					"urls":    "nats://127.0.0.1:4222",
+					"subject": "foo",
 				},
 			},
 		},
 		{
-			name: "fail, empty config",
+			name: "fail, negative retry wait",
 			args: args{
-				ctx: context.Background(),
-				cfg: map[string]string{},
-			},
-			expectedErr: `parse config: parse common config: validate config: "URLs[0]" value must be a valid url;` +
-				` "subject" value must be set`,
-		},
-		{
-			name: "fail, invalid config",
-			args: args{
-				ctx: context.Background(),
 				cfg: map[string]string{
-					config.KeyURLs: "nats://127.0.0.1:4222",
+					"urls":      "nats://127.0.0.1:4222",
+					"subject":   "foo",
+					"retryWait": "-5s",
 				},
 			},
-			expectedErr: `parse config: parse common config: validate config: "subject" value must be set`,
+			expectedErr: "RetryWait can't be a negative value",
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
+			is := is.New(t)
 			d := &Destination{}
-			if err := d.Configure(tt.args.ctx, tt.args.cfg); err != nil {
-				if tt.expectedErr == "" {
-					t.Errorf("Destination.Configure() unexpected error = %v", err)
 
-					return
-				}
-
-				if err.Error() != tt.expectedErr {
-					t.Errorf("Destination.Configure() error = %s, wantErr %s", err.Error(), tt.expectedErr)
-				}
+			err := d.Configure(context.Background(), tt.args.cfg)
+			if tt.expectedErr == "" {
+				is.NoErr(err)
+			} else {
+				is.True(err != nil)
+				is.Equal(err.Error(), tt.expectedErr)
 			}
 		})
 	}
@@ -88,7 +75,7 @@ func TestDestination_Configure(t *testing.T) {
 
 func TestDestination_Write(t *testing.T) {
 	type args struct {
-		records       []sdk.Record
+		records       []opencdc.Record
 		failedWrites  int
 		closedContext bool
 	}
@@ -102,8 +89,8 @@ func TestDestination_Write(t *testing.T) {
 		{
 			name: "Write works as expected",
 			args: args{
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				records: []opencdc.Record{
+					{Payload: opencdc.Change{After: make(opencdc.RawData, 10)}},
 				},
 			},
 			expectedWritten: 1,
@@ -112,8 +99,8 @@ func TestDestination_Write(t *testing.T) {
 			name: "Write can fail",
 			args: args{
 				failedWrites: 1,
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				records: []opencdc.Record{
+					{Payload: opencdc.Change{After: make(opencdc.RawData, 10)}},
 				},
 			},
 			expectedWritten: 0,
@@ -123,9 +110,9 @@ func TestDestination_Write(t *testing.T) {
 			name: "context can be closed",
 			args: args{
 				closedContext: true,
-				records: []sdk.Record{
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
-					{Payload: sdk.Change{After: make(sdk.RawData, 10)}},
+				records: []opencdc.Record{
+					{Payload: opencdc.Change{After: make(opencdc.RawData, 10)}},
+					{Payload: opencdc.Change{After: make(opencdc.RawData, 10)}},
 				},
 			},
 			expectedWritten: 0,
@@ -186,15 +173,12 @@ func TestDestination_Teardown(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
-
 		t.Run(tt.name, func(t *testing.T) {
 			nm := &natsMock{}
 			d := &Destination{
 				nc: nm,
 			}
 			err := d.Teardown(tt.args.ctx)
-
 			// Asserts
 			if err != nil {
 				t.Errorf("Destination.Teardown() unexpected error = %v", err)
@@ -219,6 +203,7 @@ func (m *natsMock) Drain() error {
 func (m *natsMock) JetStream(...nats.JSOpt) (nats.JetStreamContext, error) {
 	return nil, nil
 }
+
 func (m *natsMock) IsConnected() bool {
 	return false
 }

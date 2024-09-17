@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build integration
+
 package source
 
 import (
@@ -22,7 +24,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
+	"github.com/conduitio/conduit-commons/opencdc"
+
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/test"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 )
@@ -75,7 +78,7 @@ func TestSource_Read_JetStream_oneMessage(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
-	var record sdk.Record
+	var record opencdc.Record
 	for {
 		record, err = source.Read(ctx)
 		if err != nil {
@@ -130,9 +133,9 @@ func TestSource_Read_JetStream_backoffRetry(t *testing.T) {
 func createTestJetStream(stream, subject string) (sdk.Source, error) {
 	source := NewSource()
 	err := source.Configure(context.Background(), map[string]string{
-		config.KeyURLs:    test.TestURL,
-		config.KeySubject: subject,
-		ConfigKeyStream:   stream,
+		ConfigUrls:    test.TestURL,
+		ConfigSubject: subject,
+		ConfigStream:  stream,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("configure source: %v", err)
@@ -148,7 +151,7 @@ func createTestJetStream(stream, subject string) (sdk.Source, error) {
 		return nil, fmt.Errorf("add stream: %v", err)
 	}
 
-	err = source.Open(context.Background(), sdk.Position(nil))
+	err = source.Open(context.Background(), opencdc.Position(nil))
 	if err != nil {
 		return nil, fmt.Errorf("open source: %v", err)
 	}

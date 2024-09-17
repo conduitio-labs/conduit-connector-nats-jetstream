@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	sdk "github.com/conduitio/conduit-connector-sdk"
+	"github.com/conduitio/conduit-commons/opencdc"
 )
 
 // position defines a position model for the JetStream iterator.
@@ -27,18 +27,18 @@ type position struct {
 	OptSeq uint64 `json:"opt_seq"`
 }
 
-// marshalPosition marshals the underlying position into a sdk.Position as JSON bytes.
-func (p position) marshalSDKPosition() (sdk.Position, error) {
+// marshalPosition marshals the underlying position into a opencdc.Position as JSON bytes.
+func (p position) marshalSDKPosition() (opencdc.Position, error) {
 	positionBytes, err := json.Marshal(p)
 	if err != nil {
 		return nil, fmt.Errorf("marshal position: %w", err)
 	}
 
-	return sdk.Position(positionBytes), nil
+	return opencdc.Position(positionBytes), nil
 }
 
-// parsePosition converts an sdk.Position into a position.
-func parsePosition(sdkPosition sdk.Position) (position, error) {
+// parsePosition converts an opencdc.Position into a position.
+func parsePosition(sdkPosition opencdc.Position) (position, error) {
 	var p position
 
 	if sdkPosition == nil {
@@ -46,7 +46,7 @@ func parsePosition(sdkPosition sdk.Position) (position, error) {
 	}
 
 	if err := json.Unmarshal(sdkPosition, &p); err != nil {
-		return position{}, fmt.Errorf("unmarshal sdk.Position into Position: %w", err)
+		return position{}, fmt.Errorf("unmarshal opencdc.Position into Position: %w", err)
 	}
 
 	return p, nil

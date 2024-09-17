@@ -21,6 +21,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/conduitio/conduit-commons/opencdc"
+
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/internal"
 	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/nats-io/nats.go"
@@ -53,7 +55,7 @@ type IteratorParams struct {
 	Durable        string
 	DeliverSubject string
 	Subject        string
-	SDKPosition    sdk.Position
+	SDKPosition    opencdc.Position
 	DeliverPolicy  nats.DeliverPolicy
 	AckPolicy      nats.AckPolicy
 }
@@ -150,33 +152,33 @@ func (i *Iterator) HasNext(ctx context.Context) bool {
 
 // Next returns the next record from the underlying messages channel.
 // It also appends messages to a unackMessages slice if the AckPolicy is not equal to AckNonePolicy.
-func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
+func (i *Iterator) Next(ctx context.Context) (opencdc.Record, error) {
 	select {
 	case <-ctx.Done():
-		return sdk.Record{}, ctx.Err()
+		return opencdc.Record{}, ctx.Err()
 	default:
 		msgs, err := i.subscription.Fetch(fetchSize, nats.Context(ctx))
 		if err != nil {
-			return sdk.Record{}, sdk.ErrBackoffRetry
+			return opencdc.Record{}, sdk.ErrBackoffRetry
 		}
 
 		if len(msgs) != fetchSize {
-			return sdk.Record{}, sdk.ErrBackoffRetry
+			return opencdc.Record{}, sdk.ErrBackoffRetry
 		}
 		msg := msgs[0]
 
 		sdkRecord, err := i.messageToRecord(msg)
 		if err != nil {
-			return sdk.Record{},
+			return opencdc.Record{},
 				errors.Join(
-					sdk.ErrMetadataFieldNotFound,
+					opencdc.ErrMetadataFieldNotFound,
 					fmt.Errorf("convert message to record: %w", err),
 				)
 		}
 
 		position, err := parsePosition(sdkRecord.Position)
 		if err != nil {
-			return sdk.Record{}, fmt.Errorf("convert record to position: %w", err)
+			return opencdc.Record{}, fmt.Errorf("convert record to position: %w", err)
 		}
 
 		if i.params.AckPolicy != nats.AckNonePolicy {
@@ -190,7 +192,7 @@ func (i *Iterator) Next(ctx context.Context) (sdk.Record, error) {
 }
 
 // Ack acknowledges a message at the given position.
-func (i *Iterator) Ack(sdkPosition sdk.Position) error {
+func (i *Iterator) Ack(sdkPosition opencdc.Position) error {
 	// if ack policy is 'none' just return nil here
 	if i.params.AckPolicy == nats.AckNonePolicy {
 		return nil
@@ -247,32 +249,32 @@ func (i *Iterator) Stop() (err error) {
 	return nil
 }
 
-// messageToRecord converts a *nats.Msg to a sdk.Record.
-func (i *Iterator) messageToRecord(msg *nats.Msg) (sdk.Record, error) {
+// messageToRecord converts a *nats.Msg to a opencdc.Record.
+func (i *Iterator) messageToRecord(msg *nats.Msg) (opencdc.Record, error) {
 	// retrieve a message metadata one more time to grab a metadata.Timestamp
-	// and use it for a sdk.Record.Metadata
+	// and use it for a opencdc.Record.Metadata
 	metadata, err := msg.Metadata()
 	if err != nil {
-		return sdk.Record{}, fmt.Errorf("get message metadata: %w", err)
+		return opencdc.Record{}, fmt.Errorf("get message metadata: %w", err)
 	}
 
 	position, err := i.getMessagePosition(metadata)
 	if err != nil {
-		return sdk.Record{}, fmt.Errorf("get position: %w", err)
+		return opencdc.Record{}, fmt.Errorf("get position: %w", err)
 	}
 
 	if metadata.Timestamp.IsZero() {
 		metadata.Timestamp = time.Now()
 	}
 
-	sdkMetadata := make(sdk.Metadata)
+	sdkMetadata := make(opencdc.Metadata)
 	sdkMetadata.SetCreatedAt(metadata.Timestamp)
 
-	return sdk.Util.Source.NewRecordCreate(position, sdkMetadata, nil, sdk.RawData(msg.Data)), nil
+	return sdk.Util.Source.NewRecordCreate(position, sdkMetadata, nil, opencdc.RawData(msg.Data)), nil
 }
 
-// getMessagePosition returns a position of a message in the form of sdk.Position.
-func (i *Iterator) getMessagePosition(metadata *nats.MsgMetadata) (sdk.Position, error) {
+// getMessagePosition returns a position of a message in the form of opencdc.Position.
+func (i *Iterator) getMessagePosition(metadata *nats.MsgMetadata) (opencdc.Position, error) {
 	position := position{
 		OptSeq: metadata.Sequence.Consumer,
 	}

@@ -12,170 +12,93 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate paramgen -output=paramgen.go Config
+
 package source
 
 import (
+	"context"
 	"fmt"
-	"strings"
-
-	"strconv"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/validator"
+	commonscfg "github.com/conduitio/conduit-commons/config"
+	sdk "github.com/conduitio/conduit-connector-sdk"
 	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 )
 
 const (
-	// defaultBufferSize is a default buffer size for consumed messages.
-	// It must be set to avoid the problem with slow consumers.
-	// See details about slow consumers here https://docs.nats.io/using-nats/developer/connecting/events/slow.
-	defaultBufferSize = 1024
-	// defaultDurablePrefix is the default consumer name prefix.
-	defaultDurablePrefix = "conduit-"
 	// defaultDeliverSubjectSuffix is the default deliver subject suffix.
 	defaultDeliverSubjectSuffix = "conduit"
-	// defaultDeliverPolicy is the default message deliver policy.
-	defaultDeliverPolicy = nats.DeliverAllPolicy
-	// defaultAckPolicy is the default message acknowledge policy.
-	defaultAckPolicy = nats.AckExplicitPolicy
-)
-
-const (
-	// ConfigKeyBufferSize is a config name for a buffer size.
-	ConfigKeyBufferSize = "bufferSize"
-	// ConfigKeyDeliverSubject is a config name for a deliver subject.
-	ConfigKeyDeliverSubject = "deliverSubject"
-	// ConfigKeyStream is a config name for a stream name.
-	ConfigKeyStream = "stream"
-	// ConfigKeyDurable is a config name for a durable name.
-	ConfigKeyDurable = "durable"
-	// ConfigKeyDeliverPolicy is a config name for a message deliver policy.
-	ConfigKeyDeliverPolicy = "deliverPolicy"
-	// ConfigKeyAckPolicy is a config name for a message acknowledge policy.
-	ConfigKeyAckPolicy = "ackPolicy"
 )
 
 // Config holds source specific configurable values.
 type Config struct {
 	config.Config
 
-	BufferSize int `key:"bufferSize" validate:"omitempty,min=64"`
-	// Stream is the name of the Stream to be consumed
-	Stream string `key:"stream" validate:"required"`
+	// BufferSize is a buffer size for consumed messages.
+	// It must be set to avoid the problem with slow consumers.
+	// See details about slow consumers here https://docs.nats.io/using-nats/developer/connecting/events/slow.
+	BufferSize int `json:"bufferSize" validate:"greater-than=64" default:"1024"`
+	// Stream is the name of the Stream to be consumed.
+	Stream string `json:"stream" validate:"required"`
 	// Durable is the name of the Consumer, if set will make a consumer durable,
 	// allowing resuming consumption where left off.
-	Durable string `key:"durable" validate:"omitempty"`
+	Durable string `json:"durable"`
 	// DeliverSubject specifies the JetStream consumer deliver subject.
-	DeliverSubject string `json:"deliverSubject" validate:"required"`
+	DeliverSubject string `json:"deliverSubject"`
 	// DeliverPolicy defines where in the stream the connector should start receiving messages.
-	DeliverPolicy nats.DeliverPolicy `key:"deliverPolicy" validate:"oneof=0 2"`
+	DeliverPolicy string `json:"deliverPolicy" validate:"inclusion=all|new" default:"all"`
 	// AckPolicy defines how messages should be acknowledged.
-	AckPolicy nats.AckPolicy `key:"ackPolicy" validate:"oneof=0 1 2"`
+	AckPolicy string `json:"ackPolicy" validate:"inclusion=explicit|none|all" default:"explicit"`
 }
 
-// Parse maps the incoming map to the Config and validates it.
-func Parse(cfg map[string]string) (Config, error) {
-	common, err := config.Parse(cfg)
+func ParseConfig(ctx context.Context, cfg commonscfg.Config, parameters commonscfg.Parameters) (Config, error) {
+	durable := "conduit-connector-nats-jetstream-" + uuid.NewString()
+	// set defaults
+	parsedCfg := Config{
+		Config: config.Config{
+			ConnectionName: sdk.ConnectorIDFromContext(ctx),
+		},
+		Durable:        durable,
+		DeliverSubject: fmt.Sprintf("%s.%s", durable, defaultDeliverSubjectSuffix),
+	}
+
+	err := sdk.Util.ParseConfig(ctx, cfg, &parsedCfg, parameters)
 	if err != nil {
-		return Config{}, fmt.Errorf("parse common config: %w", err)
+		return Config{}, err
 	}
 
-	sourceConfig := Config{
-		Config:         common,
-		DeliverSubject: cfg[ConfigKeyDeliverSubject],
-		Durable:        cfg[ConfigKeyDurable],
-		Stream:         cfg[ConfigKeyStream],
+	err = parsedCfg.Validate()
+	if err != nil {
+		return Config{}, err
 	}
 
-	if err := sourceConfig.parseBufferSize(cfg[ConfigKeyBufferSize]); err != nil {
-		return Config{}, fmt.Errorf("parse buffer size: %w", err)
-	}
-
-	if err := sourceConfig.parseDeliverPolicy(cfg[ConfigKeyDeliverPolicy]); err != nil {
-		return Config{}, fmt.Errorf("parse deliver policy: %w", err)
-	}
-
-	if err := sourceConfig.parseAckPolicy(cfg[ConfigKeyAckPolicy]); err != nil {
-		return Config{}, fmt.Errorf("parse ack policy: %w", err)
-	}
-
-	sourceConfig.setDefaults()
-
-	if err := validator.Validate(&sourceConfig); err != nil {
-		return Config{}, fmt.Errorf("validate source config: %w", err)
-	}
-
-	return sourceConfig, nil
+	return parsedCfg, nil
 }
 
-// parseBufferSize parses the bufferSize string and
-// if it's not empty set cfg.BufferSize to its integer representation.
-func (c *Config) parseBufferSize(bufferSizeStr string) error {
-	if bufferSizeStr != "" {
-		bufferSize, err := strconv.Atoi(bufferSizeStr)
-		if err != nil {
-			return fmt.Errorf("\"%s\" must be an integer", ConfigKeyBufferSize)
-		}
-
-		c.BufferSize = bufferSize
-	}
-
-	return nil
-}
-
-// parseDeliverPolicy parses and converts the deliverPolicy string into nats.DeliverPolicy.
-func (c *Config) parseDeliverPolicy(deliverPolicyStr string) error {
-	switch strings.ToLower(deliverPolicyStr) {
+func (c Config) NATSDeliverPolicy() nats.DeliverPolicy {
+	switch c.DeliverPolicy {
 	case "all", "":
-		c.DeliverPolicy = nats.DeliverAllPolicy
+		return nats.DeliverAllPolicy
 	case "new":
-		c.DeliverPolicy = nats.DeliverNewPolicy
+		return nats.DeliverNewPolicy
 	default:
-		return fmt.Errorf("invalid deliver policy %q", deliverPolicyStr)
+		// shouldn't happen, because the SDK should limit the options to only the valid ones
+		panic(fmt.Errorf("invalid deliver policy %q", c.DeliverPolicy))
 	}
-
-	return nil
 }
 
-// parseAckPolicy parses and converts the ackPolicy string into nats.AckPolicy.
-func (c *Config) parseAckPolicy(ackPolicyStr string) error {
-	switch strings.ToLower(ackPolicyStr) {
-	case "explicit", "":
-		c.AckPolicy = nats.AckExplicitPolicy
+func (c Config) NATSAckPolicy() nats.AckPolicy {
+	switch c.AckPolicy {
+	case "explicit":
+		return nats.AckExplicitPolicy
 	case "none":
-		c.AckPolicy = nats.AckNonePolicy
+		return nats.AckNonePolicy
 	case "all":
-		c.AckPolicy = nats.AckAllPolicy
+		return nats.AckAllPolicy
 	default:
-		return fmt.Errorf("invalid ack policy %q", ackPolicyStr)
+		// shouldn't happen, because the SDK should limit the options to only the valid ones
+		panic(fmt.Errorf("invalid ack policy %q", c.AckPolicy))
 	}
-
-	return nil
-}
-
-// setDefaults set default values for empty fields.
-func (c *Config) setDefaults() {
-	if c.BufferSize == 0 {
-		c.BufferSize = defaultBufferSize
-	}
-
-	if c.Durable == "" {
-		c.Durable = c.generateDurableName()
-	}
-
-	if c.DeliverSubject == "" {
-		c.DeliverSubject = c.generateDeliverSubject()
-	}
-}
-
-// generateDurableName generates a random durable (consumer) name.
-// The durable name will be made up of the default durable prefix and a random UUID.
-func (c *Config) generateDurableName() string {
-	return defaultDurablePrefix + uuid.New().String()
-}
-
-// generateDeliverSubject generates a deliver subject in the format <durable>.conduit.
-func (c *Config) generateDeliverSubject() string {
-	return fmt.Sprintf("%s.%s", c.Durable, defaultDeliverSubjectSuffix)
 }

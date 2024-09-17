@@ -12,98 +12,62 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:generate paramgen -output=paramgen.go Config
+
 package destination
 
 import (
+	"context"
 	"errors"
-	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/conduitio-labs/conduit-connector-nats-jetstream/config"
-	"github.com/conduitio-labs/conduit-connector-nats-jetstream/validator"
+	commonscfg "github.com/conduitio/conduit-commons/config"
+	sdk "github.com/conduitio/conduit-connector-sdk"
 )
 
-const (
-	// defaultRetryWait is the default retry wait time when ErrNoResponders is encountered.
-	defaultRetryWait = time.Second * 5
-	// defaultRetryAttempts is the retry number of attempts when ErrNoResponders is encountered.
-	defaultRetryAttempts = 3
-
-	// ConfigKeyRetryWait is a config name for a retry wait duration.
-	ConfigKeyRetryWait = "retryWait"
-	// ConfigKeyRetryAttempts is a config name for a retry attempts count.
-	ConfigKeyRetryAttempts = "retryAttempts"
-)
-
-var (
-	errNegativeRetryWait     = errors.New("RetryWait can't be a negative value")
-	errNegativeRetryAttempts = errors.New("RetryAttempts can't be a negative value")
-)
+var errNegativeRetryWait = errors.New("RetryWait can't be a negative value")
 
 // Config holds destination specific configurable values.
 type Config struct {
 	config.Config
 
-	RetryWait     time.Duration `key:"retryWait"`
-	RetryAttempts int           `key:"retryAttempts"`
+	// RetryWait is the retry wait time after a failure to send a message.
+	RetryWait time.Duration `json:"retryWait" default:"5s"`
+	// RetryAttempts is the number of attempts to send a message after a failure.
+	RetryAttempts int `json:"retryAttempts" validate:"greater-than=0" default:"3"`
 }
 
-// Parse maps the incoming map to the Config and validates it.
-func Parse(cfg map[string]string) (Config, error) {
-	common, err := config.Parse(cfg)
+func ParseConfig(ctx context.Context, cfg commonscfg.Config, parameters commonscfg.Parameters) (Config, error) {
+	parsedCfg := Config{
+		Config: config.Config{
+			ConnectionName: sdk.ConnectorIDFromContext(ctx),
+		},
+	}
+
+	err := sdk.Util.ParseConfig(ctx, cfg, &parsedCfg, parameters)
 	if err != nil {
-		return Config{}, fmt.Errorf("parse common config: %w", err)
+		return Config{}, err
 	}
 
-	destinationConfig := Config{
-		Config: common,
+	err = parsedCfg.Validate()
+	if err != nil {
+		return Config{}, err
 	}
 
-	if err := destinationConfig.parseFields(cfg); err != nil {
-		return Config{}, fmt.Errorf("parse fields: %w", err)
-	}
-
-	if err := validator.Validate(&destinationConfig); err != nil {
-		return Config{}, fmt.Errorf("validate destination config: %w", err)
-	}
-
-	return destinationConfig, nil
+	return parsedCfg, nil
 }
 
-// parseFields parses non-string fields and set default values for empty fields.
-func (c *Config) parseFields(cfg map[string]string) error {
-	c.RetryWait = defaultRetryWait
-	if cfg[ConfigKeyRetryWait] != "" {
-		retryWait, err := time.ParseDuration(cfg[ConfigKeyRetryWait])
-		if err != nil {
-			return fmt.Errorf("parse %q: %w", ConfigKeyRetryWait, err)
-		}
+func (c *Config) Validate() error {
+	var errs []error
 
-		if retryWait < 0 {
-			return errNegativeRetryWait
-		}
-
-		if retryWait == 0 {
-			retryWait = defaultRetryWait
-		}
-
-		c.RetryWait = retryWait
+	if err := c.Config.Validate(); err != nil {
+		errs = append(errs, err)
 	}
 
-	c.RetryAttempts = defaultRetryAttempts
-	if cfg[ConfigKeyRetryAttempts] != "" {
-		retryAttempts, err := strconv.Atoi(cfg[ConfigKeyRetryAttempts])
-		if err != nil {
-			return fmt.Errorf("parse %q: %w", ConfigKeyRetryAttempts, err)
-		}
-
-		if retryAttempts < 0 {
-			return errNegativeRetryAttempts
-		}
-
-		c.RetryAttempts = retryAttempts
+	if c.RetryWait < 0 {
+		errs = append(errs, errNegativeRetryWait)
 	}
 
-	return nil
+	return errors.Join(errs...)
 }
