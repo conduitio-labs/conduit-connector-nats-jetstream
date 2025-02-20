@@ -9,7 +9,7 @@ require (
 	github.com/golangci/golangci-lint v1.64.5
 	github.com/google/uuid v1.6.0
 	github.com/matryer/is v1.4.1
-	github.com/nats-io/nats.go v1.39.0
+	github.com/nats-io/nats.go v1.39.1
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	mvdan.cc/gofumpt v0.7.0
