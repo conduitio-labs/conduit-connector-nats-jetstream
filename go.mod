@@ -3,7 +3,7 @@ module github.com/conduitio-labs/conduit-connector-nats-jetstream
 go 1.24.2
 
 require (
-	github.com/conduitio/conduit-commons v0.5.4
+	github.com/conduitio/conduit-commons v0.6.0
 	github.com/conduitio/conduit-connector-sdk v0.12.0
 	github.com/go-playground/validator/v10 v10.30.0
 	github.com/google/uuid v1.6.0
